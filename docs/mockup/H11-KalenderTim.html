@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalender Tim</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid #E3E6E0;background:#fff;display:flex;align-items:center;justify-content:center;color:#18201E;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:#C2410C;border:2px solid #fff}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:20px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 14px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.muted{color:#5B6662}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.scroll{overflow-x:auto}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:760px;border:1px solid #E3E6E0;border-radius:14px;overflow:hidden;background:#fff}
+.dh{padding:10px 12px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B6662;border-bottom:1px solid #E3E6E0;background:#FAFBF9}
+.c{min-height:118px;padding:8px;border-right:1px solid #EEF0EC;border-bottom:1px solid #EEF0EC;display:flex;flex-direction:column;gap:4px}
+.c.we{background:#F7F8F5}
+.c.out .n{color:#A3ACA8}
+.n{font-size:13px;font-weight:600}
+.n.today{background:#0E5A52;color:#fff;border-radius:999px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center}
+.ev{font-size:11.5px;font-weight:600;border-radius:6px;padding:3px 6px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-cuti{background:#D9ECE8;color:#0B4A43}
+.e-pend{background:#fff;color:#7A4700;border:1.5px dashed #D9A24A}
+.e-sakit{background:#FDE7E4;color:#9B1C12}
+.e-dinas{background:#E3EDFA;color:#174E8C}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+.who-out{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Menu</p>
+<nav class="nav">
+<a href="H02-DashboardKaryawan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+<a href="H05-KpiSaya.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>KPI Saya</a>
+<a href="H07-FormPenilaian.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 12h8M8 16h5"/></svg>Penilaian Saya</a>
+<a href="H08-PengajuanCuti.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>Ajukan Izin/Cuti</a>
+<a href="H09-RiwayatPengajuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></svg>Riwayat Pengajuan<span class="count">1</span></a>
+<a class="on" href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div class="rolebox"><b>Karyawan</b>IT Support · atasan: Bayu Pratama</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Kalender Tim</h1><p class="sub">Siapa yang tidak di kantor, supaya jadwal on-call tetap aman</p></div>
+<button class="iconbtn" type="button" aria-label="Notifikasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="dot"></span></button>
+<div class="who"><div class="av">RW</div><div><b>Rina Wulandari</b><span>IT Support Engineer</span></div></div>
+</header>
+<div class="content">
+<div class="toolbar">
+<button class="btn" type="button" aria-label="Bulan sebelumnya"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+<b style="font-size: 18px; min-width: 150px; text-align: center">November 2026</b>
+<button class="btn" type="button" aria-label="Bulan berikutnya"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+<button class="btn" type="button">Hari ini</button>
+<span class="grow"></span>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600">Departemen<select><option>IT Support</option><option>Customer Service</option><option>Sales &amp; Marketing</option><option>Developer</option><option>Semua</option></select></label>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; min-height: 44px"><input type="checkbox" checked style="width: 18px; height: 18px">Tampilkan yang masih menunggu</label>
+</div>
+<div class="legend"><span><i class="sw" style="background: #D9ECE8"></i>Cuti disetujui</span><span><i class="sw" style="border: 1.5px dashed #D9A24A"></i>Menunggu persetujuan</span><span><i class="sw" style="background: #FDE7E4"></i>Sakit</span><span><i class="sw" style="background: #E3EDFA"></i>Dinas luar</span></div>
+<div class="scroll">
+<div class="cal">
+<div class="dh">Sen</div><div class="dh">Sel</div><div class="dh">Rab</div><div class="dh">Kam</div><div class="dh">Jum</div><div class="dh">Sab</div><div class="dh">Min</div>
+<div class="c out"><span class="n">26</span></div>
+<div class="c out"><span class="n">27</span></div>
+<div class="c out"><span class="n">28</span></div>
+<div class="c out"><span class="n">29</span></div>
+<div class="c out"><span class="n">30</span><span class="ev e-pend">Rina · cuti</span></div>
+<div class="c out we"><span class="n">31</span></div>
+<div class="c we"><span class="n">1</span></div>
+<div class="c"><span class="n">2</span><span class="ev e-pend">Rina · cuti</span></div>
+<div class="c"><span class="n">3</span></div>
+<div class="c"><span class="n">4</span><span class="ev e-pend">Putri · cuti</span></div>
+<div class="c"><span class="n">5</span><span class="ev e-pend">Putri · cuti</span></div>
+<div class="c"><span class="n">6</span><span class="ev e-pend">Putri · cuti</span></div>
+<div class="c we"><span class="n">7</span></div>
+<div class="c we"><span class="n">8</span></div>
+<div class="c"><span class="n">9</span></div>
+<div class="c"><span class="n">10</span><span class="ev e-dinas">Dimas · Lombok</span></div>
+<div class="c"><span class="n">11</span><span class="ev e-dinas">Dimas · Lombok</span></div>
+<div class="c"><span class="n">12</span><span class="ev e-dinas">Dimas · Lombok</span></div>
+<div class="c"><span class="n">13</span></div>
+<div class="c we"><span class="n">14</span></div>
+<div class="c we"><span class="n">15</span></div>
+<div class="c"><span class="n">16</span></div>
+<div class="c"><span class="n">17</span><span class="ev e-sakit">Agus · sakit</span></div>
+<div class="c"><span class="n">18</span></div>
+<div class="c"><span class="n">19</span></div>
+<div class="c"><span class="n">20</span></div>
+<div class="c we"><span class="n">21</span></div>
+<div class="c we"><span class="n">22</span></div>
+<div class="c"><span class="n">23</span><span class="ev e-cuti">Fajar · cuti</span></div>
+<div class="c"><span class="n">24</span><span class="ev e-cuti">Fajar · cuti</span></div>
+<div class="c"><span class="n">25</span><span class="ev e-cuti">Fajar · cuti</span></div>
+<div class="c"><span class="n">26</span><span class="ev e-cuti">Fajar · cuti</span></div>
+<div class="c"><span class="n">27</span><span class="ev e-cuti">Fajar · cuti</span></div>
+<div class="c we"><span class="n">28</span></div>
+<div class="c we"><span class="n">29</span></div>
+<div class="c"><span class="n">30</span></div>
+<div class="c out"><span class="n">1</span></div>
+<div class="c out"><span class="n">2</span></div>
+<div class="c out"><span class="n">3</span></div>
+<div class="c out"><span class="n">4</span></div>
+<div class="c out we"><span class="n">5</span></div>
+<div class="c out we"><span class="n">6</span></div>
+</div>
+</div>
+<section class="card">
+<b>Ringkasan November · IT Support</b>
+<p class="muted" style="margin: 4px 0 0; font-size: 13px">Seluruh 5 anggota punya jadwal tidak di kantor bulan ini; tidak ada hari dengan lebih dari 1 orang absen.</p>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penilaian Tim</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select,input,textarea{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid #E3E6E0;background:#fff;display:flex;align-items:center;justify-content:center;color:#18201E;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:#C2410C;border:2px solid #fff}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.av.s{width:32px;height:32px;font-size:12px}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#5B6662;font-weight:600;padding:10px 12px;border-bottom:1px solid #E3E6E0;white-space:nowrap}
+.tbl td{padding:12px;border-bottom:1px solid #EEF0EC;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-good{background:#E2F2E8;color:#14583A}.b-info{background:#E3EDFA;color:#174E8C}.b-warn{background:#FDF0D8;color:#7A4700}.b-bad{background:#FDE7E4;color:#9B1C12}.b-mute{background:#EEF0EC;color:#454F4B}.b-teal{background:#E3EFEC;color:#0B4A43}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.btn.danger{color:#9B1C12;border-color:#F1B8B1}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.muted{color:#5B6662}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #E3E6E0}
+.tabs a{padding:10px 14px;min-height:44px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:#5B6662;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:#0E5A52;border-bottom-color:#0E5A52}
+.members{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.step{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px dashed #E3E6E0}
+.step:last-of-type{border-bottom:0}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Tim saya</p>
+<nav class="nav">
+<a href="H03-DashboardManajer.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+<a class="on" href="H06-PenilaianTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 12h8M8 16h5"/></svg>Penilaian Tim<span class="count">7</span></a>
+<a href="H10-Persetujuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 12l3 3 5-6"/></svg>Persetujuan<span class="count">3</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div>
+<p class="navlabel">Pribadi</p>
+<nav class="nav">
+<a href="H05-KpiSaya.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>KPI Saya</a>
+<a href="H08-PengajuanCuti.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>Ajukan Izin/Cuti</a>
+</nav>
+</div>
+<div class="rolebox"><b>Manajer</b>Kepala IT Support · 5 anggota</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Penilaian Tim</h1><p class="sub">IT Support · Oktober 2026 · tenggat penilaian 5 Nov 2026</p></div>
+<label class="field" style="flex-direction: row; align-items: center; gap: 8px">Periode
+<select><option>Oktober 2026</option><option>September 2026</option></select>
+</label>
+<button class="iconbtn" type="button" aria-label="Notifikasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="dot"></span></button>
+<div class="who"><div class="av">BP</div><div><b>Bayu Pratama</b><span>Kepala IT Support</span></div></div>
+</header>
+<div class="content">
+<nav class="tabs"><a class="on" href="#validasi">Validasi realisasi <span class="badge b-warn">7</span></a><a href="#status">Status penilaian</a></nav>
+<section class="card" id="validasi" style="padding: 8px 8px 4px">
+<div class="chead" style="padding: 12px 14px 0"><div class="grow"><h2>Realisasi menunggu validasi</h2><p class="hint">Cek bukti, lalu setujui atau kembalikan dengan catatan</p></div><button class="btn sm" type="button">Setujui semua yang dipilih</button></div>
+<div class="scroll">
+<table class="tbl">
+<thead><tr><th><input type="checkbox" aria-label="Pilih semua" style="min-height: 0; width: 18px; height: 18px"></th><th>Anggota</th><th>Indikator</th><th class="num">Target</th><th class="num">Realisasi</th><th class="num">Capaian</th><th>Bukti</th><th>Aksi</th></tr></thead>
+<tbody>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">RW</div><b>Rina Wulandari</b></div></td><td>Instalasi / training PMS</td><td class="num">4</td><td class="num"><b>3</b></td><td class="num">75,0</td><td><a href="#">2 file</a></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">AS</div><b>Agus Setiawan</b></div></td><td>Tiket terselesaikan</td><td class="num">120</td><td class="num"><b>98</b></td><td class="num">81,7</td><td><a href="#">ekspor helpdesk</a></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">AS</div><b>Agus Setiawan</b></div></td><td>Instalasi / training PMS</td><td class="num">4</td><td class="num"><b>2</b></td><td class="num">50,0</td><td><a href="#">1 file</a></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">PM</div><b>Putri Maharani</b></div></td><td>Tiket selesai dalam SLA</td><td class="num">95%</td><td class="num"><b>94%</b></td><td class="num">98,9</td><td><a href="#">ekspor helpdesk</a></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">PM</div><b>Putri Maharani</b></div></td><td>Rating kepuasan klien</td><td class="num">4,5</td><td class="num"><b>4,4</b></td><td class="num">97,8</td><td><a href="#">survei</a></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">FN</div><b>Fajar Nugroho</b></div></td><td>Tiket terselesaikan</td><td class="num">120</td><td class="num"><b>91</b></td><td class="num">75,8</td><td><a href="#">ekspor helpdesk</a></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+<tr><td><input type="checkbox" aria-label="Pilih" style="min-height: 0; width: 18px; height: 18px"></td><td><div class="who"><div class="av s">FN</div><b>Fajar Nugroho</b></div></td><td>Waktu respons pertama</td><td class="num">15 mnt</td><td class="num"><b>17 mnt</b></td><td class="num">88,2</td><td><span class="muted">tidak ada</span></td><td><div style="display: flex; gap: 6px"><button class="btn sm pri" type="button">Setujui</button><button class="btn sm danger" type="button">Kembalikan</button></div></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="status">
+<div class="chead"><div class="grow"><h2 style="margin: 0; font-size: 16px">Status penilaian Oktober</h2><p class="hint">Realisasi KPI → self-assessment → penilaian atasan → final</p></div></div>
+<div class="members">
+<div class="card"><div class="who" style="margin-bottom: 12px"><div class="av">RW</div><div><b>Rina Wulandari</b><span>KPI 95,7</span></div></div><div class="step"><span>Realisasi KPI</span><span class="badge b-warn">4/5 valid</span></div><div class="step"><span>Self-assessment</span><span class="badge b-good">Selesai</span></div><div class="step"><span>Penilaian atasan</span><span class="badge b-info">Draf</span></div><a class="btn sm pri" href="H07-FormPenilaian.html" style="margin-top: 12px; width: 100%">Lanjutkan menilai</a></div>
+<div class="card"><div class="who" style="margin-bottom: 12px"><div class="av">DS</div><div><b>Dimas Saputra</b><span>KPI 90,1</span></div></div><div class="step"><span>Realisasi KPI</span><span class="badge b-good">5/5 valid</span></div><div class="step"><span>Self-assessment</span><span class="badge b-good">Selesai</span></div><div class="step"><span>Penilaian atasan</span><span class="badge b-mute">Belum</span></div><a class="btn sm pri" href="H07-FormPenilaian.html" style="margin-top: 12px; width: 100%">Mulai menilai</a></div>
+<div class="card"><div class="who" style="margin-bottom: 12px"><div class="av">AS</div><div><b>Agus Setiawan</b><span>KPI 78,6</span></div></div><div class="step"><span>Realisasi KPI</span><span class="badge b-warn">3/5 valid</span></div><div class="step"><span>Self-assessment</span><span class="badge b-mute">Belum</span></div><div class="step"><span>Penilaian atasan</span><span class="badge b-mute">Belum</span></div><button class="btn sm" type="button" style="margin-top: 12px; width: 100%">Kirim pengingat</button></div>
+<div class="card"><div class="who" style="margin-bottom: 12px"><div class="av">PM</div><div><b>Putri Maharani</b><span>KPI 83,0</span></div></div><div class="step"><span>Realisasi KPI</span><span class="badge b-warn">3/5 valid</span></div><div class="step"><span>Self-assessment</span><span class="badge b-mute">Belum</span></div><div class="step"><span>Penilaian atasan</span><span class="badge b-mute">Belum</span></div><button class="btn sm" type="button" style="margin-top: 12px; width: 100%">Kirim pengingat</button></div>
+<div class="card"><div class="who" style="margin-bottom: 12px"><div class="av">FN</div><div><b>Fajar Nugroho</b><span>KPI 68,2</span></div></div><div class="step"><span>Realisasi KPI</span><span class="badge b-bad">3/5 valid</span></div><div class="step"><span>Self-assessment</span><span class="badge b-mute">Belum</span></div><div class="step"><span>Penilaian atasan</span><span class="badge b-mute">Belum</span></div><button class="btn sm" type="button" style="margin-top: 12px; width: 100%">Kirim pengingat</button></div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

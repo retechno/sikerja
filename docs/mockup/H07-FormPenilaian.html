@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Penilaian</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select,input,textarea{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px}
+textarea{min-height:96px;resize:vertical;width:100%}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid #E3E6E0;background:#fff;display:flex;align-items:center;justify-content:center;color:#18201E;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.av.l{width:56px;height:56px;font-size:18px}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-good{background:#E2F2E8;color:#14583A}.b-info{background:#E3EDFA;color:#174E8C}.b-warn{background:#FDF0D8;color:#7A4700}.b-teal{background:#E3EFEC;color:#0B4A43}.b-ist{background:#0E5A52;color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.muted{color:#5B6662}
+.layout{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.layout>*{flex:1 1 320px;min-width:0}
+.layout>.wide{flex:2 1 620px}
+.aspect{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:16px 0;border-bottom:1px solid #EEF0EC}
+.aspect:last-child{border-bottom:0}
+.scale{display:flex;gap:6px}
+.scale button{width:44px;height:44px;border-radius:10px;border:1px solid #CBD1CA;background:#fff;font:inherit;font-weight:700;color:#454F4B;cursor:pointer}
+.scale button.on{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.selfpill{font-size:12px;color:#5B6662;background:#F4F5F1;border-radius:8px;padding:6px 10px;white-space:nowrap}
+.kpirow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:13.5px;border-bottom:1px dashed #E3E6E0}
+.kpirow:last-child{border-bottom:0}
+.sumrow{display:flex;justify-content:space-between;gap:12px;padding:10px 0;font-size:14px}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Tim saya</p>
+<nav class="nav">
+<a href="H03-DashboardManajer.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+<a class="on" href="H06-PenilaianTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 12h8M8 16h5"/></svg>Penilaian Tim<span class="count">7</span></a>
+<a href="H10-Persetujuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 12l3 3 5-6"/></svg>Persetujuan<span class="count">3</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div class="rolebox"><b>Manajer</b>Kepala IT Support · 5 anggota</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><p class="sub" style="margin: 0"><a href="H06-PenilaianTim.html">Penilaian Tim</a> / Rina Wulandari</p><h1>Form Penilaian · Oktober 2026</h1></div>
+<span class="badge b-info">Draf · tersimpan 14.20</span>
+<div class="who"><div class="av">BP</div><div><b>Bayu Pratama</b><span>Penilai</span></div></div>
+</header>
+<div class="content">
+<section class="card" style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px">
+<div class="who grow"><div class="av l">RW</div><div><b style="font-size: 17px">Rina Wulandari</b><span>IT Support Engineer · NIK 2021-0047 · masuk 3 Mei 2021</span></div></div>
+<div><div class="muted" style="font-size: 12px">Self-assessment</div><span class="badge b-good">Selesai 15 Okt</span></div>
+<div><div class="muted" style="font-size: 12px">Skor bulan lalu</div><b>89,9</b> <span class="badge b-teal">Baik</span></div>
+</section>
+<div class="layout">
+<div class="wide" style="display: flex; flex-direction: column; gap: 24px">
+<section class="card">
+<div class="chead"><div class="grow"><h2>Aspek perilaku</h2><p class="hint">1 = sangat kurang · 3 = sesuai harapan · 5 = jauh melampaui. Nilai karyawan ditampilkan sebagai pembanding.</p></div></div>
+<div class="aspect"><div class="grow" style="flex: 1 1 200px"><b>Disiplin</b><div class="muted" style="font-size: 12.5px">Tepat waktu, mematuhi SLA dan prosedur</div></div><span class="selfpill">Karyawan: 5</span><div class="scale" role="radiogroup" aria-label="Nilai disiplin"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button" class="on">4</button><button type="button">5</button></div></div>
+<div class="aspect"><div class="grow" style="flex: 1 1 200px"><b>Kerja sama tim</b><div class="muted" style="font-size: 12.5px">Membantu rekan, berbagi pengetahuan</div></div><span class="selfpill">Karyawan: 4</span><div class="scale" role="radiogroup" aria-label="Nilai kerja sama tim"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button" class="on">5</button></div></div>
+<div class="aspect"><div class="grow" style="flex: 1 1 200px"><b>Inisiatif</b><div class="muted" style="font-size: 12.5px">Mengusulkan perbaikan tanpa diminta</div></div><span class="selfpill">Karyawan: 4</span><div class="scale" role="radiogroup" aria-label="Nilai inisiatif"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button" class="on">4</button><button type="button">5</button></div></div>
+<div class="aspect"><div class="grow" style="flex: 1 1 200px"><b>Komunikasi</b><div class="muted" style="font-size: 12.5px">Jelas kepada klien hotel dan tim</div></div><span class="selfpill">Karyawan: 4</span><div class="scale" role="radiogroup" aria-label="Nilai komunikasi"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button" class="on">4</button><button type="button">5</button></div></div>
+<div class="aspect"><div class="grow" style="flex: 1 1 200px"><b>Tanggung jawab</b><div class="muted" style="font-size: 12.5px">Menuntaskan tiket sampai klien puas</div></div><span class="selfpill">Karyawan: 5</span><div class="scale" role="radiogroup" aria-label="Nilai tanggung jawab"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button" class="on">5</button></div></div>
+</section>
+<section class="card" style="display: flex; flex-direction: column; gap: 16px">
+<div><h2>Catatan</h2><p class="hint">Terlihat oleh karyawan setelah penilaian final</p></div>
+<div class="field">Catatan pencapaian dari karyawan<div style="background: #F4F5F1; border-radius: 10px; padding: 12px 14px; font-weight: 400">Menangani migrasi data PMS Hotel Sanur Indah dalam 2 hari, lebih cepat dari jadwal 4 hari.</div></div>
+<label class="field">Komentar atasan<textarea>Respons ke klien sangat cepat dan rating konsisten di atas target. Satu kegiatan training tertunda karena jadwal klien.</textarea></label>
+<label class="field">Rencana pengembangan<textarea>Ikut sertifikasi administrasi database bulan Desember; menjadi mentor untuk Fajar pada penanganan tiket SLA.</textarea></label>
+</section>
+</div>
+<div style="display: flex; flex-direction: column; gap: 24px">
+<section class="card">
+<div class="chead"><div class="grow"><h2>Ringkasan KPI</h2><p class="hint">Dari realisasi yang tervalidasi</p></div></div>
+<div class="kpirow"><span>Tiket terselesaikan</span><b>86,7</b></div>
+<div class="kpirow"><span>Tiket dalam SLA</span><b>101,3</b></div>
+<div class="kpirow"><span>Waktu respons</span><b>120,0</b></div>
+<div class="kpirow"><span>Instalasi / training</span><b>75,0 <span class="badge b-warn">belum valid</span></b></div>
+<div class="kpirow"><span>Rating kepuasan</span><b>104,4</b></div>
+</section>
+<section class="card" style="border: 2px solid #0E5A52">
+<h2>Skor akhir</h2>
+<div class="sumrow" style="margin-top: 8px"><span>KPI 95,7 × 70%</span><b>67,0</b></div>
+<div class="sumrow"><span>Perilaku 88,0 × 30%</span><b>26,4</b></div>
+<div class="muted" style="font-size: 12px; margin-top: -4px">rata-rata nilai atasan 4,4 × 20</div>
+<div style="border-top: 1px solid #E3E6E0; margin-top: 10px; padding-top: 14px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><b style="font-size: 40px; letter-spacing: -0.02em">93,4</b><span class="badge b-ist" style="font-size: 14px; padding: 6px 14px">Istimewa</span></div>
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px">
+<button class="btn pri" type="button">Kirim penilaian</button>
+<button class="btn" type="button">Simpan draf</button>
+</div>
+<p class="hint" style="margin-top: 10px">Setelah dikirim, HR atau Direktur yang menfinalisasi.</p>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

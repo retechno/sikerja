@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laporan Kinerja</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select,input{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.av.s{width:32px;height:32px;font-size:12px}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:20px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.k{font-size:12.5px;color:#5B6662;font-weight:500}
+.v{font-size:28px;font-weight:700;letter-spacing:-.02em;margin-top:6px;line-height:1.1}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#5B6662;font-weight:600;padding:10px 12px;border-bottom:1px solid #E3E6E0;white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid #EEF0EC;vertical-align:middle;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-teal{background:#E3EFEC;color:#0B4A43}.b-ist{background:#0E5A52;color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn svg{width:18px;height:18px}
+.muted{color:#5B6662}
+.filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.pager{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:14px 12px 6px}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Administrasi</p>
+<nav class="nav">
+<a href="H12-Karyawan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6"/></svg>Karyawan</a>
+<a href="H13-TemplateKpi.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg>Template KPI</a>
+<a href="H14-PeriodePenilaian.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Periode Penilaian</a>
+<a class="on" href="H15-Laporan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></svg>Laporan</a>
+<a href="H16-Pengaturan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"/></svg>Pengaturan</a>
+</nav>
+</div>
+<div>
+<p class="navlabel">Operasional</p>
+<nav class="nav">
+<a href="H10-Persetujuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 12l3 3 5-6"/></svg>Persetujuan<span class="count">2</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div class="rolebox"><b>HR / Admin</b>Akses seluruh perusahaan</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Laporan kinerja</h1><p class="sub">Skor final per karyawan, siap diekspor untuk evaluasi bonus dan promosi</p></div>
+<button class="btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Excel</button>
+<button class="btn pri" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>PDF</button>
+<div class="who"><div class="av">SP</div><div><b>Sari Puspita</b><span>HR</span></div></div>
+</header>
+<div class="content">
+<div class="filters">
+<label class="field">Periode<select><option>September 2026</option><option>Kuartal III 2026 (Jul–Sep)</option><option>Agustus 2026</option></select></label>
+<label class="field">Departemen<select><option>Semua departemen</option><option>IT Support</option><option>Customer Service</option><option>Sales &amp; Marketing</option><option>Developer</option></select></label>
+<label class="field">Predikat<select><option>Semua predikat</option><option>Istimewa</option><option>Baik</option><option>Cukup</option><option>Perlu Perbaikan</option><option>Kurang</option></select></label>
+<label class="field" style="flex: 1 1 220px">Cari<input type="search" placeholder="Nama karyawan"></label>
+</div>
+<div class="grid4">
+<div class="card"><div class="k">Karyawan dinilai</div><div class="v">24</div></div>
+<div class="card"><div class="k">Rata-rata skor akhir</div><div class="v">82,5</div></div>
+<div class="card"><div class="k">Rata-rata KPI / perilaku</div><div class="v">83,1 <span style="font-size: 18px; color: #5B6662">/ 81,1</span></div></div>
+<div class="card"><div class="k">Rentang skor</div><div class="v">58,7 – 94,1</div></div>
+</div>
+<section class="card" style="padding: 8px 8px 4px">
+<div class="scroll">
+<table class="tbl">
+<thead><tr><th>#</th><th>Karyawan</th><th>Departemen</th><th class="num">Skor KPI</th><th class="num">Perilaku</th><th class="num">Skor akhir ↓</th><th>Predikat</th><th>Penilai</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><div class="who"><div class="av s">LD</div><b>Larasati Dewi</b></div></td><td>Developer</td><td class="num">95,0</td><td class="num">92,0</td><td class="num"><b>94,1</b></td><td><span class="badge b-ist">Istimewa</span></td><td>Teguh Santoso</td></tr>
+<tr><td>2</td><td><div class="who"><div class="av s">YP</div><b>Yoga Prasetyo</b></div></td><td>Developer</td><td class="num">93,4</td><td class="num">92,0</td><td class="num"><b>93,0</b></td><td><span class="badge b-ist">Istimewa</span></td><td>Teguh Santoso</td></tr>
+<tr><td>3</td><td><div class="who"><div class="av s">DS</div><b>Dimas Saputra</b></div></td><td>IT Support</td><td class="num">94,1</td><td class="num">88,0</td><td class="num"><b>92,3</b></td><td><span class="badge b-ist">Istimewa</span></td><td>Bayu Pratama</td></tr>
+<tr><td>4</td><td><div class="who"><div class="av s">MA</div><b>Melati Anggraini</b></div></td><td>Customer Service</td><td class="num">91,4</td><td class="num">88,0</td><td class="num"><b>90,4</b></td><td><span class="badge b-ist">Istimewa</span></td><td>Indah Permatasari</td></tr>
+<tr><td>5</td><td><div class="who"><div class="av s">RW</div><b>Rina Wulandari</b></div></td><td>IT Support</td><td class="num">92,4</td><td class="num">84,0</td><td class="num"><b>89,9</b></td><td><span class="badge b-teal">Baik</span></td><td>Bayu Pratama</td></tr>
+<tr><td>6</td><td><div class="who"><div class="av s">TS</div><b>Teguh Santoso</b></div></td><td>Developer</td><td class="num">88,4</td><td class="num">88,0</td><td class="num"><b>88,3</b></td><td><span class="badge b-teal">Baik</span></td><td>Hendra Gunawan</td></tr>
+<tr><td>7</td><td><div class="who"><div class="av s">IP</div><b>Indah Permatasari</b></div></td><td>Customer Service</td><td class="num">87,4</td><td class="num">88,0</td><td class="num"><b>87,6</b></td><td><span class="badge b-teal">Baik</span></td><td>Hendra Gunawan</td></tr>
+<tr><td>8</td><td><div class="who"><div class="av s">AW</div><b>Andi Wijaya</b></div></td><td>Sales &amp; Marketing</td><td class="num">85,7</td><td class="num">84,0</td><td class="num"><b>85,2</b></td><td><span class="badge b-teal">Baik</span></td><td>Hendra Gunawan</td></tr>
+<tr><td>9</td><td><div class="who"><div class="av s">BP</div><b>Bayu Pratama</b></div></td><td>IT Support</td><td class="num">85,1</td><td class="num">84,0</td><td class="num"><b>84,8</b></td><td><span class="badge b-teal">Baik</span></td><td>Hendra Gunawan</td></tr>
+<tr><td>10</td><td><div class="who"><div class="av s">AS</div><b>Agus Setiawan</b></div></td><td>IT Support</td><td class="num">82,0</td><td class="num">80,0</td><td class="num"><b>81,4</b></td><td><span class="badge b-teal">Baik</span></td><td>Bayu Pratama</td></tr>
+</tbody>
+</table>
+</div>
+<div class="pager"><span class="muted grow" style="font-size: 13px">Menampilkan 1–10 dari 24 · skor akhir = 70% KPI + 30% perilaku</span><button class="btn sm" type="button">Sebelumnya</button><button class="btn sm pri" type="button">1</button><button class="btn sm" type="button">2</button><button class="btn sm" type="button">3</button><button class="btn sm" type="button">Berikutnya</button></div>
+</section>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

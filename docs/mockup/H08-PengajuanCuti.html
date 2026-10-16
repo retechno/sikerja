@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengajuan Izin dan Cuti</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select,input,textarea{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px;width:100%}
+textarea{min-height:96px;resize:vertical}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid #E3E6E0;background:#fff;display:flex;align-items:center;justify-content:center;color:#18201E;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:#C2410C;border:2px solid #fff}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.av.s{width:32px;height:32px;font-size:12px}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-good{background:#E2F2E8;color:#14583A}.b-warn{background:#FDF0D8;color:#7A4700}.b-mute{background:#EEF0EC;color:#454F4B}.b-teal{background:#E3EFEC;color:#0B4A43}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.field small{font-weight:400;color:#5B6662}
+.muted{color:#5B6662}
+.layout{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.layout>*{flex:1 1 320px;min-width:0}
+.layout>.wide{flex:2 1 600px}
+.types{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.type{display:flex;flex-direction:column;gap:2px;border:1px solid #CBD1CA;border-radius:12px;padding:12px 14px;cursor:pointer;min-height:64px}
+.type b{font-size:14px}.type span{font-size:12px;color:#5B6662}
+.type.on{border:2px solid #0E5A52;background:#F3F8F6}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.calc{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;background:#F3F8F6;border-radius:12px;padding:14px 16px}
+.calc b{font-size:22px}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days span{width:46px;border-radius:8px;text-align:center;font-size:11.5px;padding:6px 0;background:#0E5A52;color:#fff;font-weight:600}
+.bal{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-bottom:1px solid #EEF0EC}
+.bal:last-child{border-bottom:0}
+.bar{height:8px;border-radius:999px;background:#EEF0EC;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.flow{display:flex;flex-direction:column;gap:0}
+.fstep{display:flex;gap:12px;align-items:flex-start;padding-bottom:16px;position:relative}
+.fnum{width:28px;height:28px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Menu</p>
+<nav class="nav">
+<a href="H02-DashboardKaryawan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+<a href="H05-KpiSaya.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>KPI Saya</a>
+<a href="H07-FormPenilaian.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 12h8M8 16h5"/></svg>Penilaian Saya</a>
+<a class="on" href="H08-PengajuanCuti.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>Ajukan Izin/Cuti</a>
+<a href="H09-RiwayatPengajuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2"/></svg>Riwayat Pengajuan<span class="count">1</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div class="rolebox"><b>Karyawan</b>IT Support · atasan: Bayu Pratama</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Ajukan izin atau cuti</h1><p class="sub">Jumlah hari dihitung otomatis tanpa akhir pekan dan hari libur</p></div>
+<button class="iconbtn" type="button" aria-label="Notifikasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="dot"></span></button>
+<div class="who"><div class="av">RW</div><div><b>Rina Wulandari</b><span>IT Support Engineer</span></div></div>
+</header>
+<div class="content">
+<div class="layout">
+<form class="card wide" style="display: flex; flex-direction: column; gap: 22px">
+<div class="field">Jenis pengajuan
+<div class="types">
+<label class="type on"><b>Cuti tahunan</b><span>sisa 8 hari</span></label>
+<label class="type"><b>Cuti sakit</b><span>surat dokter jika &gt; 1 hari</span></label>
+<label class="type"><b>Izin</b><span>setengah / satu hari</span></label>
+<label class="type"><b>Dinas luar</b><span>kunjungan klien</span></label>
+<label class="type"><b>Cuti khusus</b><span>menikah, melahirkan, duka</span></label>
+</div>
+</div>
+<div class="fg">
+<label class="field">Tanggal mulai<input type="text" value="Senin, 23 Nov 2026"></label>
+<label class="field">Tanggal selesai<input type="text" value="Jumat, 27 Nov 2026"></label>
+</div>
+<div class="calc">
+<div><div class="muted" style="font-size: 12px">Dihitung</div><b>5 hari kerja</b></div>
+<div class="days" aria-label="Rincian hari"><span>Sen 23</span><span>Sel 24</span><span>Rab 25</span><span>Kam 26</span><span>Jum 27</span></div>
+<div class="muted" style="font-size: 12.5px">Tidak ada hari libur pada rentang ini.</div>
+</div>
+<label class="field">Alasan<textarea>Acara keluarga di Yogyakarta.</textarea></label>
+<div class="fg">
+<label class="field">Karyawan pengganti <small>opsional</small><select><option>Dimas Saputra</option><option>Agus Setiawan</option></select></label>
+<label class="field">Lampiran <small>opsional untuk cuti tahunan</small><input type="text" value="" placeholder="Pilih file (PDF, JPG, maks 5 MB)"></label>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; border-top: 1px solid #EEF0EC; padding-top: 18px">
+<a class="btn" href="H02-DashboardKaryawan.html">Batal</a>
+<button class="btn pri" type="button">Kirim pengajuan</button>
+</div>
+</form>
+<div style="display: flex; flex-direction: column; gap: 24px">
+<section class="card">
+<div class="chead"><div class="grow"><h2>Saldo 2026</h2><p class="hint">Diperbarui saat pengajuan disetujui</p></div></div>
+<div class="bal"><div style="display: flex; justify-content: space-between"><b>Cuti tahunan</b><span><b>8</b> <span class="muted">/ 12 hari</span></span></div><div class="bar"><i style="width: 16.7%; background: #0E5A52"></i><i style="width: 16.7%; background: #E8A33D"></i><i style="width: 41.6%; background: #B5D2CC"></i></div><div class="muted" style="font-size: 12px">2 terpakai · 2 menunggu · pengajuan ini 5 → sisa 3</div></div>
+<div class="bal"><div style="display: flex; justify-content: space-between"><b>Izin</b><span><b>4,5</b> <span class="muted">/ 6 hari</span></span></div><div class="bar"><i style="width: 25%; background: #0E5A52"></i></div><div class="muted" style="font-size: 12px">1,5 hari terpakai</div></div>
+<div class="bal"><div style="display: flex; justify-content: space-between"><b>Cuti sakit</b><span class="badge b-mute">tidak memotong saldo</span></div><div class="muted" style="font-size: 12px">2 hari tercatat tahun ini</div></div>
+</section>
+<section class="card">
+<div class="chead"><div class="grow"><h2>Alur persetujuan</h2></div></div>
+<div class="flow">
+<div class="fstep"><div class="fnum">1</div><div><b>Bayu Pratama</b><div class="muted" style="font-size: 12.5px">Atasan langsung</div></div></div>
+<div class="fstep"><div class="fnum">2</div><div><b>Sari Puspita</b><div class="muted" style="font-size: 12.5px">HR · saldo dipotong setelah disetujui</div></div></div>
+</div>
+<p class="hint">Anda akan menerima email di setiap perubahan status.</p>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

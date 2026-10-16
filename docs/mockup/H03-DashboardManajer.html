@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Manajer</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select,input,textarea{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid #E3E6E0;background:#fff;display:flex;align-items:center;justify-content:center;color:#18201E;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:#C2410C;border:2px solid #fff}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.av.s{width:32px;height:32px;font-size:12px}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px;align-items:start}
+.k{font-size:12.5px;color:#5B6662;font-weight:500}
+.v{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-top:6px;line-height:1.1}
+.d{font-size:12.5px;margin-top:6px;color:#5B6662}
+.up{color:#14583A;font-weight:600}.down{color:#9B1C12;font-weight:600}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#5B6662;font-weight:600;padding:10px 12px;border-bottom:1px solid #E3E6E0;white-space:nowrap}
+.tbl td{padding:12px;border-bottom:1px solid #EEF0EC;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-good{background:#E2F2E8;color:#14583A}.b-info{background:#E3EDFA;color:#174E8C}.b-warn{background:#FDF0D8;color:#7A4700}.b-bad{background:#FDE7E4;color:#9B1C12}.b-mute{background:#EEF0EC;color:#454F4B}.b-teal{background:#E3EFEC;color:#0B4A43}.b-ist{background:#0E5A52;color:#fff}
+.bar{height:8px;border-radius:999px;background:#EEF0EC;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:999px;background:#0E5A52}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.btn.danger{color:#9B1C12;border-color:#F1B8B1}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EEF0EC}
+.li:last-child{border-bottom:0}
+.muted{color:#5B6662}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Tim saya</p>
+<nav class="nav">
+<a class="on" href="H03-DashboardManajer.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+<a href="H06-PenilaianTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M8 12h8M8 16h5"/></svg>Penilaian Tim<span class="count">7</span></a>
+<a href="H10-Persetujuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 12l3 3 5-6"/></svg>Persetujuan<span class="count">3</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div>
+<p class="navlabel">Pribadi</p>
+<nav class="nav">
+<a href="H05-KpiSaya.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>KPI Saya</a>
+<a href="H08-PengajuanCuti.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>Ajukan Izin/Cuti</a>
+</nav>
+</div>
+<div class="rolebox"><b>Manajer</b>Kepala IT Support · 5 anggota</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Tim IT Support</h1><p class="sub">Ringkasan kinerja dan tugas yang menunggu Anda</p></div>
+<label class="field" style="flex-direction: row; align-items: center; gap: 8px">Periode
+<select><option>Oktober 2026</option><option>September 2026</option></select>
+</label>
+<button class="iconbtn" type="button" aria-label="Notifikasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg><span class="dot"></span></button>
+<div class="who"><div class="av">BP</div><div><b>Bayu Pratama</b><span>Kepala IT Support</span></div></div>
+</header>
+<div class="content">
+<div class="grid4">
+<div class="card"><div class="k">Rata-rata skor tim · Sep</div><div class="v">81,0</div><div class="d"><span class="up">+1,6</span> dari Agustus</div></div>
+<div class="card"><div class="k">Realisasi menunggu validasi</div><div class="v">7</div><div class="d">dari 4 anggota · <a href="H06-PenilaianTim.html">validasi</a></div></div>
+<div class="card"><div class="k">Izin/cuti menunggu</div><div class="v">3</div><div class="d">terlama 2 hari · <a href="H10-Persetujuan.html">tinjau</a></div></div>
+<div class="card"><div class="k">Anggota skor &lt; 70</div><div class="v" style="color: #9B1C12">1</div><div class="d">Fajar Nugroho · 64,5</div></div>
+</div>
+<div class="split">
+<section class="card">
+<div class="chead"><div class="grow"><h2>Peringkat tim</h2><p class="hint">Skor akhir September (final) dan skor KPI Oktober (sementara)</p></div></div>
+<div class="scroll">
+<table class="tbl">
+<thead><tr><th>#</th><th>Anggota</th><th class="num">Sep</th><th>Predikat</th><th class="num">Okt</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><div class="who"><div class="av s">DS</div><b>Dimas Saputra</b></div></td><td class="num"><b>92,3</b></td><td><span class="badge b-ist">Istimewa</span></td><td class="num">90,1</td></tr>
+<tr><td>2</td><td><div class="who"><div class="av s">RW</div><b>Rina Wulandari</b></div></td><td class="num"><b>89,9</b></td><td><span class="badge b-teal">Baik</span></td><td class="num">95,7</td></tr>
+<tr><td>3</td><td><div class="who"><div class="av s">AS</div><b>Agus Setiawan</b></div></td><td class="num"><b>81,4</b></td><td><span class="badge b-teal">Baik</span></td><td class="num">78,6</td></tr>
+<tr><td>4</td><td><div class="who"><div class="av s">PM</div><b>Putri Maharani</b></div></td><td class="num"><b>76,8</b></td><td><span class="badge b-warn">Cukup</span></td><td class="num">83,0</td></tr>
+<tr><td>5</td><td><div class="who"><div class="av s">FN</div><b>Fajar Nugroho</b></div></td><td class="num"><b>64,5</b></td><td><span class="badge b-bad">Perlu Perbaikan</span></td><td class="num">68,2</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+<div style="display: flex; flex-direction: column; gap: 24px">
+<section class="card">
+<div class="chead"><div class="grow"><h2>KPI di bawah target</h2><p class="hint">Oktober, realisasi tervalidasi</p></div></div>
+<div class="list">
+<div class="li"><div class="av s">FN</div><div class="grow"><b>Tiket selesai dalam SLA</b><div class="muted" style="font-size: 12.5px">Fajar Nugroho · 88% dari target 95%</div></div><span class="badge b-bad">92,6</span></div>
+<div class="li"><div class="av s">AS</div><div class="grow"><b>Instalasi / training PMS</b><div class="muted" style="font-size: 12.5px">Agus Setiawan · 2 dari 4 kegiatan</div></div><span class="badge b-bad">50,0</span></div>
+<div class="li"><div class="av s">PM</div><div class="grow"><b>Waktu respons pertama</b><div class="muted" style="font-size: 12.5px">Putri Maharani · 19 menit, target ≤ 15</div></div><span class="badge b-warn">78,9</span></div>
+</div>
+</section>
+<section class="card">
+<div class="chead"><div class="grow"><h2>Menunggu persetujuan Anda</h2></div><a class="btn sm" href="H10-Persetujuan.html">Lihat semua</a></div>
+<div class="list">
+<div class="li"><div class="av s">RW</div><div class="grow"><b>Rina Wulandari · Cuti tahunan</b><div class="muted" style="font-size: 12.5px">30 Okt – 2 Nov · 2 hari kerja</div></div><button class="btn sm pri" type="button">Tinjau</button></div>
+<div class="li"><div class="av s">PM</div><div class="grow"><b>Putri Maharani · Cuti tahunan</b><div class="muted" style="font-size: 12.5px">4 – 6 Nov · 3 hari kerja</div></div><button class="btn sm pri" type="button">Tinjau</button></div>
+<div class="li"><div class="av s">AS</div><div class="grow"><b>Agus Setiawan · Izin setengah hari</b><div class="muted" style="font-size: 12.5px">20 Okt · pagi</div></div><button class="btn sm pri" type="button">Tinjau</button></div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

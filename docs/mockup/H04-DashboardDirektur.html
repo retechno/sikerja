@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Direktur</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+select,input,textarea{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:10px;padding:9px 12px;background:#fff;min-height:44px}
+.iconbtn{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid #E3E6E0;background:#fff;display:flex;align-items:center;justify-content:center;color:#18201E;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:#C2410C;border:2px solid #fff}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.av.s{width:32px;height:32px;font-size:12px}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px;align-items:start}
+.k{font-size:12.5px;color:#5B6662;font-weight:500}
+.v{font-size:30px;font-weight:700;letter-spacing:-.02em;margin-top:6px;line-height:1.1}
+.d{font-size:12.5px;margin-top:6px;color:#5B6662}
+.up{color:#14583A;font-weight:600}.down{color:#9B1C12;font-weight:600}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-good{background:#E2F2E8;color:#14583A}.b-warn{background:#FDF0D8;color:#7A4700}.b-bad{background:#FDE7E4;color:#9B1C12}.b-teal{background:#E3EFEC;color:#0B4A43}.b-ist{background:#0E5A52;color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #EEF0EC}
+.li:last-child{border-bottom:0}
+.muted{color:#5B6662}
+.hrow{display:grid;grid-template-columns:150px minmax(0,1fr) 48px;align-items:center;gap:14px;padding:10px 0}
+.htrack{height:26px;background:#F0F2EE;border-radius:8px;position:relative;overflow:hidden}
+.htrack i{position:absolute;left:0;top:0;bottom:0;background:#0E5A52;border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Perusahaan</p>
+<nav class="nav">
+<a class="on" href="H04-DashboardDirektur.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>Dashboard</a>
+<a href="H15-Laporan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></svg>Laporan</a>
+<a href="H10-Persetujuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 12l3 3 5-6"/></svg>Persetujuan<span class="count">1</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div class="rolebox"><b>Direktur</b>Akses baca seluruh perusahaan</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Kinerja perusahaan</h1><p class="sub">24 karyawan dinilai · 4 departemen</p></div>
+<label class="field" style="flex-direction: row; align-items: center; gap: 8px">Periode
+<select><option>September 2026 (final)</option><option>Oktober 2026 (berjalan)</option></select>
+</label>
+<button class="iconbtn" type="button" aria-label="Notifikasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></svg></button>
+<div class="who"><div class="av">HG</div><div><b>Hendra Gunawan</b><span>Direktur</span></div></div>
+</header>
+<div class="content">
+<div class="grid4">
+<div class="card"><div class="k">Rata-rata perusahaan</div><div class="v">82,5</div><div class="d"><span class="up">+0,5</span> dari Agustus · predikat Baik</div></div>
+<div class="card"><div class="k">Departemen terbaik</div><div class="v" style="font-size: 24px">Developer</div><div class="d">rata-rata 86,3</div></div>
+<div class="card"><div class="k">Predikat Istimewa</div><div class="v">4 <span style="font-size: 16px; color: #5B6662; font-weight: 600">orang</span></div><div class="d">17% dari yang dinilai</div></div>
+<div class="card"><div class="k">Perlu perhatian (&lt; 70)</div><div class="v" style="color: #9B1C12">3 <span style="font-size: 16px; color: #5B6662; font-weight: 600">orang</span></div><div class="d">2 Sales, 1 IT Support</div></div>
+</div>
+<div class="split">
+<section class="card">
+<div class="chead"><div class="grow"><h2>Skor rata-rata per departemen</h2><p class="hint">September 2026, skala 0–100</p></div></div>
+<div class="hrow"><b>Developer</b><div class="htrack"><i style="width: 86.3%"></i></div><b class="num">86,3</b></div>
+<div class="hrow"><b>Customer Service</b><div class="htrack"><i style="width: 84.6%; background: #3E8A80"></i></div><b class="num">84,6</b></div>
+<div class="hrow"><b>IT Support</b><div class="htrack"><i style="width: 81%; background: #3E8A80"></i></div><b class="num">81,0</b></div>
+<div class="hrow"><b>Sales &amp; Marketing</b><div class="htrack"><i style="width: 78.2%; background: #B86E12"></i></div><b class="num">78,2</b></div>
+<p class="hint" style="margin-top: 8px">Sales &amp; Marketing satu-satunya di bawah 80; pendapatan tercapai 87% dari target.</p>
+</section>
+<section class="card">
+<div class="chead"><div class="grow"><h2>Tren skor perusahaan</h2><p class="hint">6 periode terakhir</p></div></div>
+<svg viewBox="0 0 520 190" style="width: 100%; height: auto" role="img" aria-label="Skor rata-rata perusahaan naik dari 79,8 di April ke 82,5 di September">
+<line x1="20" x2="510" y1="160" y2="160" stroke="#E3E6E0"/>
+<line x1="20" x2="510" y1="95" y2="95" stroke="#EEF0EC"/>
+<line x1="20" x2="510" y1="30" y2="30" stroke="#EEF0EC"/>
+<text x="20" y="90" font-size="11" fill="#5B6662">81</text>
+<text x="20" y="25" font-size="11" fill="#5B6662">84</text>
+<polyline points="40,121 128,104 216,76 304,102 392,73 480,63" fill="none" stroke="#0E5A52" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="40" cy="121" r="4" fill="#fff" stroke="#0E5A52" stroke-width="2"/>
+<circle cx="128" cy="104" r="4" fill="#fff" stroke="#0E5A52" stroke-width="2"/>
+<circle cx="216" cy="76" r="4" fill="#fff" stroke="#0E5A52" stroke-width="2"/>
+<circle cx="304" cy="102" r="4" fill="#fff" stroke="#0E5A52" stroke-width="2"/>
+<circle cx="392" cy="73" r="4" fill="#fff" stroke="#0E5A52" stroke-width="2"/>
+<circle cx="480" cy="63" r="6" fill="#0E5A52"/>
+<text x="40" y="112" font-size="11.5" text-anchor="middle" fill="#5B6662">79,8</text>
+<text x="128" y="95" font-size="11.5" text-anchor="middle" fill="#5B6662">80,6</text>
+<text x="216" y="67" font-size="11.5" text-anchor="middle" fill="#5B6662">81,9</text>
+<text x="304" y="93" font-size="11.5" text-anchor="middle" fill="#5B6662">80,7</text>
+<text x="392" y="64" font-size="11.5" text-anchor="middle" fill="#5B6662">82,0</text>
+<text x="480" y="50" font-size="12.5" font-weight="700" text-anchor="middle" fill="#18201E">82,5</text>
+<text x="40" y="180" font-size="12" text-anchor="middle" fill="#5B6662">Apr</text>
+<text x="128" y="180" font-size="12" text-anchor="middle" fill="#5B6662">Mei</text>
+<text x="216" y="180" font-size="12" text-anchor="middle" fill="#5B6662">Jun</text>
+<text x="304" y="180" font-size="12" text-anchor="middle" fill="#5B6662">Jul</text>
+<text x="392" y="180" font-size="12" text-anchor="middle" fill="#5B6662">Agu</text>
+<text x="480" y="180" font-size="12" text-anchor="middle" fill="#18201E" font-weight="600">Sep</text>
+</svg>
+</section>
+</div>
+<section class="card">
+<div class="chead"><div class="grow"><h2>Sebaran predikat</h2><p class="hint">24 karyawan, September 2026</p></div></div>
+<div style="display: flex; height: 36px; border-radius: 10px; overflow: hidden; gap: 2px">
+<div style="width: 16.7%; background: #0E5A52; color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center">4</div>
+<div style="width: 45.8%; background: #6FAFA4; color: #0F2421; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center">11</div>
+<div style="width: 25%; background: #E8C27A; color: #3D2600; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center">6</div>
+<div style="width: 8.3%; background: #D9822B; color: #2B1400; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center">2</div>
+<div style="width: 4.2%; background: #9B1C12; color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center">1</div>
+</div>
+<div class="legend"><span><i class="sw" style="background: #0E5A52"></i>Istimewa ≥ 90</span><span><i class="sw" style="background: #6FAFA4"></i>Baik 80–89,99</span><span><i class="sw" style="background: #E8C27A"></i>Cukup 70–79,99</span><span><i class="sw" style="background: #D9822B"></i>Perlu Perbaikan 60–69,99</span><span><i class="sw" style="background: #9B1C12"></i>Kurang &lt; 60</span></div>
+</section>
+<div class="split">
+<section class="card">
+<div class="chead"><div class="grow"><h2>5 skor tertinggi</h2></div></div>
+<div class="list">
+<div class="li"><div class="av s">LD</div><div class="grow"><b>Larasati Dewi</b><div class="muted" style="font-size: 12.5px">Developer</div></div><b class="num">94,1</b><span class="badge b-ist">Istimewa</span></div>
+<div class="li"><div class="av s">YP</div><div class="grow"><b>Yoga Prasetyo</b><div class="muted" style="font-size: 12.5px">Developer</div></div><b class="num">93,0</b><span class="badge b-ist">Istimewa</span></div>
+<div class="li"><div class="av s">DS</div><div class="grow"><b>Dimas Saputra</b><div class="muted" style="font-size: 12.5px">IT Support</div></div><b class="num">92,3</b><span class="badge b-ist">Istimewa</span></div>
+<div class="li"><div class="av s">MA</div><div class="grow"><b>Melati Anggraini</b><div class="muted" style="font-size: 12.5px">Customer Service</div></div><b class="num">90,4</b><span class="badge b-ist">Istimewa</span></div>
+<div class="li"><div class="av s">RW</div><div class="grow"><b>Rina Wulandari</b><div class="muted" style="font-size: 12.5px">IT Support</div></div><b class="num">89,9</b><span class="badge b-teal">Baik</span></div>
+</div>
+</section>
+<section class="card">
+<div class="chead"><div class="grow"><h2>5 skor terendah</h2></div><a class="btn sm" href="H15-Laporan.html">Buka laporan</a></div>
+<div class="list">
+<div class="li"><div class="av s">RF</div><div class="grow"><b>Reza Firmansyah</b><div class="muted" style="font-size: 12.5px">Sales &amp; Marketing</div></div><b class="num">58,7</b><span class="badge b-bad">Kurang</span></div>
+<div class="li"><div class="av s">FN</div><div class="grow"><b>Fajar Nugroho</b><div class="muted" style="font-size: 12.5px">IT Support</div></div><b class="num">64,5</b><span class="badge b-bad">Perlu Perbaikan</span></div>
+<div class="li"><div class="av s">NK</div><div class="grow"><b>Nanda Kusuma</b><div class="muted" style="font-size: 12.5px">Sales &amp; Marketing</div></div><b class="num">66,9</b><span class="badge b-bad">Perlu Perbaikan</span></div>
+<div class="li"><div class="av s">WH</div><div class="grow"><b>Wahyu Hidayat</b><div class="muted" style="font-size: 12.5px">Customer Service</div></div><b class="num">71,2</b><span class="badge b-warn">Cukup</span></div>
+<div class="li"><div class="av s">CL</div><div class="grow"><b>Citra Lestari</b><div class="muted" style="font-size: 12.5px">Sales &amp; Marketing</div></div><b class="num">72,0</b><span class="badge b-warn">Cukup</span></div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

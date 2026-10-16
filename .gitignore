@@ -1,0 +1,25 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Go
+backend/bin/
+backend/tmp/
+*.test
+*.out
+coverage.*
+
+# Node / Vue
+node_modules/
+frontend/dist/
+*.log
+
+# Upload & storage lokal
+storage/
+backend/storage/
+
+# Editor & OS
+.idea/
+.vscode/
+.DS_Store

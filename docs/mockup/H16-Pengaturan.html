@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengaturan</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F1;color:#18201E;font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:14px;line-height:1.5}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:100vh}
+.side{flex:1 1 248px;background:#0F2421;color:#C9D6D2;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:19px;padding:0 8px}
+.mark{width:34px;height:34px;border-radius:10px;background:#E8A33D;color:#0F2421;display:flex;align-items:center;justify-content:center;font-weight:800}
+.navlabel{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA6A1;padding:0 12px;margin:0 0 6px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;color:#C9D6D2;text-decoration:none;font-weight:500;min-height:44px}
+.nav a:hover{background:#18332F;color:#fff}
+.nav a.on{background:#E3EFEC;color:#0F2421;font-weight:700}
+.nav svg{width:18px;height:18px;flex:none}
+.count{margin-left:auto;background:#E8A33D;color:#0F2421;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px}
+.rolebox{margin-top:auto;background:#18332F;border-radius:12px;padding:12px 14px;font-size:12px;color:#B7C7C2}
+.rolebox b{display:block;color:#fff;font-size:13px}
+.main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:18px 32px;background:#fff;border-bottom:1px solid #E3E6E0}
+.top h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em}
+.sub{margin:2px 0 0;color:#5B6662;font-size:13px}
+.grow{flex:1 1 auto}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:40px;height:40px;border-radius:50%;background:#E3EFEC;color:#0E5A52;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.who b{display:block;font-size:14px;line-height:1.2}.who span{font-size:12px;color:#5B6662}
+.content{padding:28px 32px 40px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%}
+.card{background:#fff;border:1px solid #E3E6E0;border-radius:16px;padding:20px 22px}
+.card h2{margin:0;font-size:16px;font-weight:700}
+.hint{margin:2px 0 0;color:#5B6662;font-size:13px}
+.chead{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:16px}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:#5B6662;font-weight:600;padding:10px 12px;border-bottom:1px solid #E3E6E0;white-space:nowrap}
+.tbl td{padding:12px;border-bottom:1px solid #EEF0EC;vertical-align:middle;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.b-good{background:#E2F2E8;color:#14583A}.b-mute{background:#EEF0EC;color:#454F4B}.b-info{background:#E3EDFA;color:#174E8C}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;font:inherit;font-weight:600;border:1px solid #CBD1CA;background:#fff;color:#18201E;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.btn.sm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.muted{color:#5B6662}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #E3E6E0}
+.tabs a{padding:10px 14px;min-height:44px;display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:#5B6662;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:#0E5A52;border-bottom-color:#0E5A52}
+.layout{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.layout>*{flex:1 1 340px;min-width:0}
+.yes{color:#14583A;font-weight:600}.no{color:#5B6662}
+.sw{width:44px;height:26px;border-radius:999px;background:#0E5A52;position:relative;flex:none;border:0;cursor:pointer}
+.sw::after{content:'';position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+.sw.off{background:#CBD1CA}
+.sw.off::after{right:auto;left:3px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EEF0EC}
+.row:last-child{border-bottom:0}
+.date{width:52px;text-align:center;border-radius:10px;background:#F4F5F1;padding:6px 0;flex:none}
+.date b{display:block;font-size:17px;line-height:1.1}.date span{font-size:11px;color:#5B6662;text-transform:uppercase}
+</style>
+</helmet>
+<div class="app">
+<aside class="side">
+<div class="brand"><div class="mark">S</div>SiKerja</div>
+<div>
+<p class="navlabel">Administrasi</p>
+<nav class="nav">
+<a href="H12-Karyawan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6"/></svg>Karyawan</a>
+<a href="H13-TemplateKpi.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg>Template KPI</a>
+<a href="H14-PeriodePenilaian.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Periode Penilaian</a>
+<a href="H15-Laporan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6"/></svg>Laporan</a>
+<a class="on" href="H16-Pengaturan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"/></svg>Pengaturan</a>
+</nav>
+</div>
+<div>
+<p class="navlabel">Operasional</p>
+<nav class="nav">
+<a href="H10-Persetujuan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM8 12l3 3 5-6"/></svg>Persetujuan<span class="count">2</span></a>
+<a href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender Tim</a>
+</nav>
+</div>
+<div class="rolebox"><b>HR / Admin</b>Akses seluruh perusahaan</div>
+</aside>
+<main class="main">
+<header class="top">
+<div class="grow"><h1>Pengaturan</h1><p class="sub">Data master dan aturan yang dipakai seluruh aplikasi</p></div>
+<div class="who"><div class="av">SP</div><div><b>Sari Puspita</b><span>HR</span></div></div>
+</header>
+<div class="content">
+<nav class="tabs"><a href="#">Departemen &amp; jabatan</a><a class="on" href="#">Jenis cuti</a><a href="#">Hari libur</a><a href="#">Aspek perilaku</a><a href="#">Notifikasi</a></nav>
+<section class="card" style="padding: 8px 8px 4px">
+<div class="chead" style="padding: 12px 14px 0"><div class="grow"><h2>Jenis izin &amp; cuti</h2><p class="hint">Kuota per tahun kalender; saldo dibuat otomatis tiap 1 Januari</p></div><button class="btn sm pri" type="button">Tambah jenis</button></div>
+<div class="scroll">
+<table class="tbl">
+<thead><tr><th>Jenis</th><th>Kode</th><th>Kuota / tahun</th><th>Potong saldo tahunan</th><th>Wajib lampiran</th><th>Setengah hari</th><th>Persetujuan</th><th></th></tr></thead>
+<tbody>
+<tr><td><b>Cuti tahunan</b></td><td>CT</td><td>12 hari · masa kerja ≥ 12 bln</td><td class="yes">Ya</td><td class="no">Tidak</td><td class="no">Tidak</td><td>Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+<tr><td><b>Cuti sakit</b></td><td>CS</td><td>Tidak dibatasi</td><td class="no">Tidak</td><td class="yes">Ya, jika &gt; 1 hari</td><td class="no">Tidak</td><td>Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+<tr><td><b>Izin</b></td><td>IZ</td><td>6 hari</td><td class="no">Tidak</td><td class="no">Tidak</td><td class="yes">Ya</td><td>Atasan (½ hari) · Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+<tr><td><b>Dinas luar</b></td><td>DL</td><td>Tidak dibatasi</td><td class="no">Tidak</td><td class="yes">Ya, surat tugas</td><td class="no">Tidak</td><td>Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+<tr><td><b>Cuti menikah</b></td><td>CK-N</td><td>3 hari</td><td class="no">Tidak</td><td class="yes">Ya</td><td class="no">Tidak</td><td>Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+<tr><td><b>Cuti melahirkan</b></td><td>CK-M</td><td>3 bulan</td><td class="no">Tidak</td><td class="yes">Ya</td><td class="no">Tidak</td><td>Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+<tr><td><b>Cuti duka</b></td><td>CK-D</td><td>2 hari</td><td class="no">Tidak</td><td class="no">Tidak</td><td class="no">Tidak</td><td>Atasan → HR</td><td><button class="btn sm" type="button">Ubah</button></td></tr>
+</tbody>
+</table>
+</div>
+<p class="hint" style="padding: 4px 14px 12px">Kuota cuti khusus mengikuti kebijakan perusahaan dan peraturan ketenagakerjaan yang berlaku; mohon dicek HR sebelum dipakai.</p>
+</section>
+<div class="layout">
+<section class="card">
+<div class="chead"><div class="grow"><h2>Hari libur berikutnya</h2><p class="hint">Tidak dihitung sebagai hari kerja</p></div><button class="btn sm" type="button">Impor dari daftar resmi</button></div>
+<div class="row"><div class="date"><b>25</b><span>Des</span></div><div class="grow"><b>Hari Raya Natal</b><div class="muted" style="font-size: 12.5px">Libur nasional · Jumat</div></div><span class="badge b-info">Nasional</span></div>
+<div class="row"><div class="date"><b>1</b><span>Jan</span></div><div class="grow"><b>Tahun Baru 2027 Masehi</b><div class="muted" style="font-size: 12.5px">Libur nasional · Jumat</div></div><span class="badge b-info">Nasional</span></div>
+<div class="row"><div class="date"><b>[ ]</b><span>2027</span></div><div class="grow"><b>Cuti bersama 2027</b><div class="muted" style="font-size: 12.5px">Ditambahkan setelah SKB pemerintah terbit</div></div><span class="badge b-mute">Menunggu</span></div>
+</section>
+<section class="card">
+<div class="chead"><div class="grow"><h2>Notifikasi</h2><p class="hint">Dikirim di aplikasi dan lewat email</p></div></div>
+<div class="row"><div class="grow"><b>Pengajuan izin/cuti baru</b><div class="muted" style="font-size: 12.5px">ke penyetuju berikutnya</div></div><button class="sw" type="button" aria-label="Aktif" aria-pressed="true"></button></div>
+<div class="row"><div class="grow"><b>Hasil persetujuan</b><div class="muted" style="font-size: 12.5px">ke karyawan yang mengajukan</div></div><button class="sw" type="button" aria-label="Aktif" aria-pressed="true"></button></div>
+<div class="row"><div class="grow"><b>Periode penilaian dibuka</b><div class="muted" style="font-size: 12.5px">ke semua karyawan</div></div><button class="sw" type="button" aria-label="Aktif" aria-pressed="true"></button></div>
+<div class="row"><div class="grow"><b>Pengingat tenggat penilaian</b><div class="muted" style="font-size: 12.5px">3 hari dan 1 hari sebelum tenggat</div></div><button class="sw" type="button" aria-label="Aktif" aria-pressed="true"></button></div>
+<div class="row"><div class="grow"><b>WhatsApp</b><div class="muted" style="font-size: 12.5px">tersedia di rilis 3</div></div><button class="sw off" type="button" aria-label="Nonaktif" aria-pressed="false" disabled></button></div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+</body>
+</html>

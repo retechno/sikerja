@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pengajuan di Ponsel</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E5A52}a:hover{color:#09403A}
+*{box-sizing:border-box}
+input,textarea,select{font:inherit;color:#18201E;border:1px solid #CBD1CA;border-radius:12px;padding:10px 12px;background:#fff;min-height:46px;width:100%}
+textarea{min-height:72px;resize:none}
+.chip{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid #CBD1CA;font-weight:600;font-size:13px;background:#fff;color:#18201E;white-space:nowrap}
+.chip.on{background:#0E5A52;border-color:#0E5A52;color:#fff}
+.lbl{font-size:12.5px;font-weight:600;display:flex;flex-direction:column;gap:6px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:#5B6662;text-decoration:none;min-height:52px;justify-content:center}
+.tab.on{color:#0E5A52;font-weight:700}
+.tab svg{width:22px;height:22px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #F4F5F1; color: #18201E; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; align-items: center; gap: 8px; padding: 16px 12px 12px; background: #fff; border-bottom: 1px solid #E3E6E0">
+<a href="H02-DashboardKaryawan.html" aria-label="Kembali" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #18201E"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+<div style="flex: 1"><div style="font-weight: 700; font-size: 17px">Ajukan izin/cuti</div><div style="font-size: 12px; color: #5B6662">Sisa cuti tahunan 8 hari</div></div>
+</div>
+<div style="flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+<div class="lbl">Jenis
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="chip on">Cuti tahunan</span><span class="chip">Sakit</span><span class="chip">Izin</span><span class="chip">Dinas luar</span><span class="chip">Khusus</span></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label class="lbl">Mulai<input type="text" value="23 Nov 2026"></label>
+<label class="lbl">Selesai<input type="text" value="27 Nov 2026"></label>
+</div>
+<div style="background: #fff; border: 1px solid #E3E6E0; border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px">
+<div style="width: 48px; height: 48px; border-radius: 12px; background: #E3EFEC; color: #0E5A52; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center">5</div>
+<div><b>hari kerja</b><div style="font-size: 12.5px; color: #5B6662">Sen 23 – Jum 27 Nov · sisa saldo jadi 3</div></div>
+</div>
+<label class="lbl">Alasan<textarea>Acara keluarga di Yogyakarta.</textarea></label>
+<label class="lbl">Pengganti (opsional)<select><option>Dimas Saputra</option></select></label>
+<div style="font-size: 12.5px; color: #5B6662">Disetujui oleh <b style="color: #18201E">Bayu Pratama</b>, lalu <b style="color: #18201E">Sari Puspita</b> (HR).</div>
+<button type="button" style="min-height: 50px; border-radius: 14px; border: 0; background: #0E5A52; color: #fff; font: inherit; font-weight: 700; font-size: 15px">Kirim pengajuan</button>
+</div>
+<nav style="display: flex; background: #fff; border-top: 1px solid #E3E6E0; padding: 4px 4px 12px">
+<a class="tab" href="H02-DashboardKaryawan.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Beranda</a>
+<a class="tab" href="H05-KpiSaya.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>KPI</a>
+<a class="tab on" href="M08-PengajuanPonsel.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l16-8-6 16-3-7z"/></svg>Cuti</a>
+<a class="tab" href="H11-KalenderTim.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Kalender</a>
+<a class="tab" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profil</a>
+</nav>
+</div>
+</x-dc>
+</body>
+</html>
