@@ -304,3 +304,166 @@ export interface PeriodProgress {
   finalized: number
   avg_final: Dec | null
 }
+
+// ---------- izin & cuti (Rilis 2) ----------
+
+export type LeaveStatus = 'pending_manager' | 'pending_hr' | 'approved' | 'rejected' | 'cancelled'
+
+export interface LeaveType {
+  id: number
+  name: string
+  code: string
+  annual_quota: Dec | null
+  deducts_balance: boolean
+  requires_attachment: boolean
+  attachment_min_days: Dec
+  allow_half_day: boolean
+  min_tenure_months: number
+  max_days_per_request: Dec | null
+  sort: number
+  is_active: boolean
+}
+
+export interface Holiday {
+  id: number
+  date: string
+  name: string
+  type: 'nasional' | 'cuti_bersama'
+}
+
+export interface LeaveBalance {
+  leave_type: LeaveType
+  year: number
+  tracked: boolean
+  quota: Dec | null
+  used: Dec
+  pending: Dec
+  available: Dec | null
+}
+
+export interface DayInfo {
+  date: string
+  weekday: string
+  counted: boolean
+  skip?: 'weekend' | 'holiday'
+  holiday?: string
+}
+
+export interface WorkingDays {
+  days: Dec
+  half_day: boolean
+  calendar_days: number
+  breakdown: DayInfo[]
+  skipped: DayInfo[]
+}
+
+export interface FlowStep {
+  level: number
+  role: string
+  names: string[]
+}
+
+export interface LeaveBalanceInfo {
+  quota: Dec
+  used: Dec
+  pending: Dec
+  available: Dec
+  after: Dec
+}
+
+export interface LeavePreview {
+  working_days: WorkingDays
+  flow: FlowStep[]
+  balance?: LeaveBalanceInfo | null
+  warnings: string[]
+}
+
+export interface TimelineStep {
+  title: string
+  actor: string
+  note?: string
+  at: string | null
+  state: 'done' | 'current' | 'todo' | 'rejected' | 'cancelled'
+}
+
+export interface LeaveConflict {
+  employee_name: string
+  type_name: string
+  range: string
+  status: string
+}
+
+export interface LeaveRequest {
+  id: number
+  number: string | null
+  employee_id: number
+  employee?: Employee
+  leave_type_id: number
+  leave_type?: LeaveType
+  start_date: string
+  end_date: string
+  half_day: boolean
+  half_session: 'pagi' | 'siang' | null
+  days: Dec
+  reason: string
+  substitute?: Employee | null
+  status: LeaveStatus
+  status_label: string
+  deducted: boolean
+  has_attachment: boolean
+  attachment_name: string
+  can_cancel: boolean
+  cancel_until?: string
+  can_act: boolean
+  is_last_stage: boolean
+  created_at: string
+  timeline?: TimelineStep[]
+  skipped?: DayInfo[]
+  balance?: LeaveBalanceInfo | null
+  conflicts?: LeaveConflict[]
+}
+
+export interface LeaveSummary {
+  year: number
+  balances: LeaveBalance[]
+  recent: LeaveRequest[]
+  pending_count: number
+  queue: LeaveRequest[]
+}
+
+export interface CalendarItem {
+  id: number
+  employee_id: number
+  employee_name: string
+  department_id: number
+  department_name: string
+  type_code: string
+  type_name: string
+  start_date: string
+  end_date: string
+  half_day: boolean
+  half_session?: string
+  status: LeaveStatus
+  days: string
+}
+
+export interface LeaveCalendar {
+  month: string
+  from: string
+  to: string
+  items: CalendarItem[]
+  holidays: Holiday[]
+}
+
+export interface Colleague {
+  id: number
+  name: string
+  position?: string
+}
+
+export interface NotifySetting {
+  key: string
+  label: string
+  hint: string
+  enabled: boolean
+}
