@@ -99,6 +99,7 @@ func NewRouter(d Deps) *gin.Engine {
 	hr.PUT("/employees/:id", h.updateEmployee)
 	hr.DELETE("/employees/:id", h.deleteEmployee)
 
+	hr.GET("/periods/progress", h.periodProgress)
 	hr.POST("/periods", h.createPeriod)
 	hr.PUT("/periods/:id", h.updatePeriod)
 	hr.POST("/periods/:id/open", h.periodAction(h.Periods.Open))

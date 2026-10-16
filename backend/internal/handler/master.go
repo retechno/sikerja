@@ -289,6 +289,15 @@ func (h *H) listPeriods(c *gin.Context) {
 	ok(c, v)
 }
 
+func (h *H) periodProgress(c *gin.Context) {
+	v, err := h.Periods.Progress(actor(c))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	ok(c, v)
+}
+
 func (h *H) getPeriod(c *gin.Context) {
 	id, good := h.idParam(c, "id")
 	if !good {

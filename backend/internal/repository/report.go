@@ -35,7 +35,20 @@ type GradeCountRow struct {
 	Count int64
 }
 
+// ProgressRow = hitungan progres satu periode (semua karyawan).
+type ProgressRow struct {
+	PeriodID  uint64
+	Results   int64
+	Validated int64
+	SelfDone  int64
+	MgrDone   int64 // manager_done + final
+	Final     int64
+	Avg       *float64
+}
+
 type ReportRepo interface {
+	// PeriodProgress: progres semua periode dengan dua query (realisasi, penilaian).
+	PeriodProgress() (map[uint64]*ProgressRow, error)
 	// ScoresForPeriod: semua karyawan aktif ber-departemen (opsional difilter satu departemen
 	// atau daftar karyawan) beserta penilaiannya. Satu query, tanpa N+1.
 	ScoresForPeriod(periodID uint64, deptID uint64, employeeIDs []uint64) ([]ScoreRow, error)
@@ -96,4 +109,51 @@ func (r *reportRepo) GradeCounts(periodID, deptID uint64) ([]GradeCountRow, erro
 	var out []GradeCountRow
 	err := q.Group("a.grade").Scan(&out).Error
 	return out, err
+}
+
+func (r *reportRepo) PeriodProgress() (map[uint64]*ProgressRow, error) {
+	out := map[uint64]*ProgressRow{}
+	row := func(id uint64) *ProgressRow {
+		if out[id] == nil {
+			out[id] = &ProgressRow{PeriodID: id}
+		}
+		return out[id]
+	}
+	var res []struct {
+		PeriodID  uint64
+		Total     int64
+		Validated int64
+	}
+	err := r.db.Table("kpi_results").
+		Select("period_id, COUNT(*) AS total, SUM(CASE WHEN status = 'validated' THEN 1 ELSE 0 END) AS validated").
+		Group("period_id").Scan(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range res {
+		p := row(x.PeriodID)
+		p.Results, p.Validated = x.Total, x.Validated
+	}
+	var aps []struct {
+		PeriodID uint64
+		SelfDone int64
+		MgrDone  int64
+		Final    int64
+		Avg      *float64
+	}
+	err = r.db.Table("appraisals").
+		Select(`period_id,
+			SUM(CASE WHEN self_submitted_at IS NOT NULL THEN 1 ELSE 0 END) AS self_done,
+			SUM(CASE WHEN status IN ('manager_done', 'final') THEN 1 ELSE 0 END) AS mgr_done,
+			SUM(CASE WHEN status = 'final' THEN 1 ELSE 0 END) AS final,
+			AVG(final_score) AS avg`).
+		Group("period_id").Scan(&aps).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, x := range aps {
+		p := row(x.PeriodID)
+		p.SelfDone, p.MgrDone, p.Final, p.Avg = x.SelfDone, x.MgrDone, x.Final, x.Avg
+	}
+	return out, nil
 }

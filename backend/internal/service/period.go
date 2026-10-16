@@ -207,3 +207,70 @@ func (s *PeriodService) Resolve(a Actor, id uint64) (uint64, error) {
 	}
 	return p.ID, nil
 }
+
+// PeriodProgress: progres pengisian satu periode (untuk H-14).
+type PeriodProgress struct {
+	PeriodID        uint64           `json:"period_id"`
+	Employees       int              `json:"employees"`        // karyawan aktif yang dinilai
+	ExpectedResults int              `json:"expected_results"` // karyawan × indikator
+	Results         int64            `json:"results"`
+	Validated       int64            `json:"validated"`
+	SelfDone        int64            `json:"self_done"`
+	ManagerDone     int64            `json:"manager_done"`
+	Finalized       int64            `json:"finalized"`
+	AvgFinal        *decimal.Decimal `json:"avg_final"`
+}
+
+// Progress mengembalikan progres semua periode (HR).
+func (s *PeriodService) Progress(a Actor) ([]PeriodProgress, error) {
+	if !a.IsHR() {
+		return nil, apperr.Forbidden("Hanya HR yang dapat melihat progres periode")
+	}
+	r := s.store.R()
+	ps, err := r.Periods.List()
+	if err != nil {
+		return nil, err
+	}
+	emps, err := r.Employees.AllActive()
+	if err != nil {
+		return nil, err
+	}
+	perDept := map[uint64]int{}
+	for _, e := range emps {
+		if e.DepartmentID != nil {
+			perDept[*e.DepartmentID]++
+		}
+	}
+	depts := make([]uint64, 0, len(perDept))
+	for d := range perDept {
+		depts = append(depts, d)
+	}
+	tpls, err := r.Templates.ActiveByDepartments(depts)
+	if err != nil {
+		return nil, err
+	}
+	employees, expected := 0, 0
+	for d, n := range perDept {
+		employees += n
+		if t := tpls[d]; t != nil {
+			expected += n * len(t.Indicators)
+		}
+	}
+	rows, err := r.Reports.PeriodProgress()
+	if err != nil {
+		return nil, err
+	}
+	out := make([]PeriodProgress, 0, len(ps))
+	for _, p := range ps {
+		pp := PeriodProgress{PeriodID: p.ID, Employees: employees, ExpectedResults: expected}
+		if x := rows[p.ID]; x != nil {
+			pp.Results, pp.Validated, pp.SelfDone, pp.ManagerDone, pp.Finalized = x.Results, x.Validated, x.SelfDone, x.MgrDone, x.Final
+			if x.Avg != nil {
+				v := round2(*x.Avg)
+				pp.AvgFinal = &v
+			}
+		}
+		out = append(out, pp)
+	}
+	return out, nil
+}

@@ -229,3 +229,37 @@ func TestReportAccessAndExports(t *testing.T) {
 	assert.True(t, bytes.HasPrefix(pdf, []byte("%PDF-")), "bukan PDF")
 	assert.Greater(t, len(pdf), 1000)
 }
+
+func TestPeriodProgress(t *testing.T) {
+	d := newDash(t)
+	w := d.w
+	rs := d.fillAll(t, w.EmpIT1, w.EmpIT1, w.Active.ID)
+	d.validateAll(t, w.MgrIT, rs[:3])
+	d.finalize(t, w.EmpIT2, 4)
+
+	ps := service.NewPeriodService(w.Store, nil)
+	_, err := ps.Progress(w.Actor(w.MgrIT))
+	assert.Equal(t, http.StatusForbidden, status(t, err))
+
+	list, err := ps.Progress(w.Actor(w.HR))
+	require.NoError(t, err)
+	require.Len(t, list, 2)
+	var act, closed service.PeriodProgress
+	for _, p := range list {
+		if p.PeriodID == w.Active.ID {
+			act = p
+		} else {
+			closed = p
+		}
+	}
+	assert.Equal(t, 5, act.Employees, "2 IT + MgrIT + MgrCS + EmpCS1")
+	// IT: Bayu + Rina + Fajar → 3 × 5 indikator; CS: Citra + Dimas → 2 × 4 indikator
+	assert.Equal(t, 3*5+2*4, act.ExpectedResults)
+	assert.Equal(t, int64(10), act.Results, "5 milik Rina + 5 milik Fajar")
+	assert.Equal(t, int64(8), act.Validated, "3 divalidasi untuk Rina + 5 untuk Fajar")
+	assert.Equal(t, int64(1), act.ManagerDone)
+	assert.Equal(t, int64(1), act.Finalized)
+	require.NotNil(t, act.AvgFinal)
+	assert.Zero(t, closed.Results)
+	assert.Nil(t, closed.AvgFinal)
+}

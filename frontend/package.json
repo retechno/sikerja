@@ -1,0 +1,49 @@
+{
+  "name": "sikerja-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@vee-validate/zod": "^4.15.1",
+    "axios": "^1.20.0",
+    "chart.js": "^4.5.1",
+    "pinia": "^4.1.0",
+    "vee-validate": "^4.15.1",
+    "vue": "^3.5.44",
+    "vue-chartjs": "^5.3.4",
+    "vue-router": "^5.4.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vitest/coverage-v8": "^5.0.5",
+    "@vue/test-utils": "^2.5.1",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.11.1",
+    "globals": "^17.13.0",
+    "jsdom": "^28.1.0",
+    "postcss": "^8.5.30",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.3.13"
+  }
+}

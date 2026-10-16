@@ -314,6 +314,7 @@ func TestRoleMatrix(t *testing.T) {
 		{"PUT", "/api/v1/departments/1", obj{}, []string{"hr"}},
 		{"DELETE", "/api/v1/departments/99999", nil, []string{"hr"}},
 		{"POST", "/api/v1/positions", obj{}, []string{"hr"}},
+		{"GET", "/api/v1/periods/progress", nil, []string{"hr"}},
 		{"POST", "/api/v1/periods", obj{}, []string{"hr"}},
 		{"PUT", p("/api/v1/periods/%d", pid), obj{}, []string{"hr"}},
 		{"POST", p("/api/v1/periods/%d/open", pid), nil, []string{"hr"}},

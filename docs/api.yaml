@@ -255,6 +255,13 @@ paths:
       summary: Buat periode (HR); status awal draft
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PeriodInput" } } } }
       responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /periods/progress:
+    get:
+      tags: [Periode]
+      summary: Progres semua periode - realisasi terisi/tervalidasi, self-assessment, penilaian atasan, rata-rata skor (HR)
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/PeriodProgress" } } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
   /periods/{id}:
     get:
       tags: [Periode]
@@ -566,6 +573,18 @@ components:
         end_date: { type: string, format: date }
         kpi_weight: { type: number, example: 70 }
         behavior_weight: { type: number, example: 30, description: "kpi_weight + behavior_weight = 100" }
+    PeriodProgress:
+      type: object
+      properties:
+        period_id: { type: integer }
+        employees: { type: integer }
+        expected_results: { type: integer, description: "karyawan × indikator" }
+        results: { type: integer }
+        validated: { type: integer }
+        self_done: { type: integer }
+        manager_done: { type: integer }
+        finalized: { type: integer }
+        avg_final: { $ref: "#/components/schemas/Decimal" }
     Indicator:
       type: object
       properties:
