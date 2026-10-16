@@ -102,3 +102,12 @@ Format: **keputusan** — alasan.
 - **Token akses tidak membawa role**: Actor dimuat dari DB tiap request (3 query ringan) agar perubahan role,
   departemen, atau penonaktifan langsung berlaku.
 - **Folder `dto/`** dari CLAUDE.md tidak dibuat; struct input/output didefinisikan di dekat service yang memakainya.
+
+## Tambahan (infrastruktur)
+
+- **Go 1.26, bukan 1.23**: dependensi terbaru (maroto v2.4, go-redis v9.23, x/crypto, validator, migrate) mensyaratkan Go ≥ 1.25/1.26,
+  dan toolchain lokal sudah 1.26. `go.mod` = `go 1.26.1`; image Docker `golang:1.26`. Versi di SPEC/CLAUDE.md ("Go 1.23") perlu diperbarui.
+- **Vite memproxy `/api` ke API** di mode dev sehingga browser dan API satu origin (cookie SameSite=Lax jalan tanpa CORS). CORS tetap aktif
+  untuk origin di `CORS_ORIGINS`.
+- **Port host**: web 5173, API 8080, MySQL 3307, Redis 6380, Mailpit UI 8025 — MySQL/Redis digeser agar tidak bentrok dengan instalasi lokal.
+- **`.gitattributes`** memaksa LF supaya diff bersih di Windows.

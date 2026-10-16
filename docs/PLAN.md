@@ -21,7 +21,7 @@ Centang `[x]` saat selesai. Urutan = urutan pengerjaan.
 - [x] 14. Dashboard (karyawan/manajer/direktur) + cache Redis, tanpa N+1
 - [x] 15. Laporan + export Excel & PDF
 - [x] 16. Seeder `cmd/seed` (departemen, user, template, aspek, 6 periode + data acak)
-- [ ] 17. `docs/api.yaml`
+- [x] 17. `docs/api.yaml`
 - [x] 18. Test otorisasi + periode tertutup
 
 ## C. Frontend

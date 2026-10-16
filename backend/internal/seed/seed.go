@@ -404,7 +404,8 @@ var (
 func seedEmployeePeriod(r repository.Repos, rng *rand.Rand, p *model.AppraisalPeriod, e *emp, tpl *model.KpiTemplate,
 	aspects []model.BehaviorAspect, hr *emp, active bool, back int, kpiCalc service.KpiScoreService, appr service.AppraisalService) error {
 
-	skill := e.P.Skill + (float64(5-back))*0.004 // tren naik tipis
+	// 0,92: kemampuan dasar diskalakan agar skor demo sebagian besar di rentang 70–95 (bukan di atas 100)
+	skill := e.P.Skill*0.92 + (float64(5-back))*0.004 // tren naik tipis
 	approver := e.Appr
 	approverID := approver.E.ID
 
@@ -494,7 +495,7 @@ func seedEmployeePeriod(r repository.Repos, rng *rand.Rand, p *model.AppraisalPe
 	mgrAt := selfAt.AddDate(0, 0, 2)
 	mgrScores := make([]int, len(aspects))
 	for i := range aspects {
-		mgrScores[i] = int(clamp(math.Round(3+(skill-0.95)*9+rng.NormFloat64()*0.6), 1, 5))
+		mgrScores[i] = int(clamp(math.Round(3.4+(skill-0.88)*7+rng.NormFloat64()*0.6), 1, 5))
 	}
 	if isRina {
 		mgrScores = []int{4, 5, 4, 4, 5}

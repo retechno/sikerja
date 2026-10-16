@@ -1,0 +1,663 @@
+openapi: 3.0.3
+info:
+  title: SiKerja API
+  version: 1.0.0-rilis1
+  description: |
+    Kontrak REST API SiKerja (Rilis 1: autentikasi, master data, KPI, penilaian, dasbor, laporan).
+    Endpoint izin & cuti (Rilis 2) belum ada.
+
+    **Konvensi**
+    - Semua endpoint di bawah `/api/v1`, JSON (kecuali unggah multipart dan unduhan berkas).
+    - Sukses: `{ "data": ..., "meta": ... }`. Gagal: `{ "error": { "code", "message", "fields" } }`.
+    - Autentikasi: cookie httpOnly `sk_at` (access JWT, 15 menit) dan `sk_rt` (refresh, 7 hari, hanya dikirim ke `/api/v1/auth`).
+      Token tidak pernah ada di body respons.
+    - **CSRF**: setiap request selain GET/HEAD/OPTIONS wajib membawa header `X-Requested-With: XMLHttpRequest`.
+    - Otorisasi dua lapis: role (middleware) lalu kepemilikan data (service). Karyawan hanya data sendiri; manajer anggota
+      departemennya; HR & Direktur seluruh perusahaan. Pelanggaran → 403.
+    - Periode `closed` terkunci: perubahan realisasi/penilaian → 423.
+    - Angka skor/desimal dikirim sebagai string desimal (mis. `"95.65"`); tampilkan 1 desimal dengan koma di UI.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Lokal (port host dapat diubah lewat API_PORT)
+tags:
+  - { name: Auth, description: Login, sesi, dan password }
+  - { name: Profil }
+  - { name: Master, description: Departemen, jabatan, karyawan }
+  - { name: Periode }
+  - { name: KPI, description: Template, realisasi, validasi, bukti }
+  - { name: Penilaian }
+  - { name: Dasbor }
+  - { name: Laporan }
+  - { name: Lainnya }
+
+security:
+  - cookieAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Masuk (rate limit 5 gagal → jeda 1 menit per email)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                remember: { type: boolean, description: "true = cookie refresh bertahan 7 hari; false = cookie sesi" }
+      responses:
+        "200": { description: "Berhasil; cookie sk_at & sk_rt diset. Body = profil.", content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "429": { description: "Terkunci; lihat header Retry-After (detik).", headers: { Retry-After: { schema: { type: integer } } }, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Tukar refresh token dengan pasangan baru (rotasi)
+      security: []
+      responses:
+        "200": { description: Cookie baru diset }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Keluar dan cabut refresh token
+      security: []
+      responses:
+        "204": { description: Cookie dihapus }
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Minta tautan reset password lewat email (selalu 200, tidak membocorkan akun)
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string, format: email } } } } }
+      responses:
+        "200": { description: Pesan netral }
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Atur password baru dengan token dari email (berlaku 1 jam, sekali pakai)
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [token, password], properties: { token: { type: string }, password: { type: string, minLength: 8 } } } } }
+      responses:
+        "200": { description: Password diubah }
+        "400": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: Ganti password (semua sesi lain dicabut)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [current_password, new_password], properties: { current_password: { type: string }, new_password: { type: string, minLength: 8 } } } } }
+      responses:
+        "200": { description: Berhasil; cookie baru diset }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /me:
+    get:
+      tags: [Profil]
+      summary: Profil pengguna yang login
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeEnvelope" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [Profil]
+      summary: Ubah nama dan telepon sendiri
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [name], properties: { name: { type: string }, phone: { type: string } } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeEnvelope" } } } }
+        "422": { $ref: "#/components/responses/Error" }
+  /me/photo:
+    post:
+      tags: [Profil]
+      summary: Unggah foto profil (JPG/PNG, maks. 2 MB)
+      requestBody:
+        required: true
+        content: { multipart/form-data: { schema: { type: object, required: [file], properties: { file: { type: string, format: binary } } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeEnvelope" } } } }
+        "422": { $ref: "#/components/responses/Error" }
+  /employees/{id}/photo:
+    get:
+      tags: [Profil]
+      summary: Foto profil (semua pengguna login)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: Gambar, content: { image/jpeg: {}, image/png: {} } }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /departments:
+    get:
+      tags: [Master]
+      summary: Daftar departemen
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/Department" } } } } } } } }
+    post:
+      tags: [Master]
+      summary: Tambah departemen (HR)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DepartmentInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /departments/{id}:
+    put:
+      tags: [Master]
+      summary: Ubah departemen (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DepartmentInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+    delete:
+      tags: [Master]
+      summary: Hapus departemen (HR); 409 bila masih dipakai
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: Dihapus }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+  /positions:
+    get:
+      tags: [Master]
+      summary: Daftar jabatan (opsional ?department_id)
+      parameters: [{ name: department_id, in: query, schema: { type: integer } }]
+      responses: { "200": { description: OK } }
+    post:
+      tags: [Master]
+      summary: Tambah jabatan (HR)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PositionInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /positions/{id}:
+    put:
+      tags: [Master]
+      summary: Ubah jabatan (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PositionInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" } }
+    delete:
+      tags: [Master]
+      summary: Hapus jabatan (HR); 409 bila masih dipakai
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: Dihapus }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+
+  /employees:
+    get:
+      tags: [Master]
+      summary: Daftar karyawan (HR)
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: Cari nama atau NIK }
+        - { name: department_id, in: query, schema: { type: integer } }
+        - { name: status, in: query, schema: { type: string, enum: [active, inactive] } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20, maximum: 200 } }
+      responses:
+        "200": { description: "OK; meta = {page, per_page, total}", content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/Employee" } }, meta: { $ref: "#/components/schemas/PageMeta" } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [Master]
+      summary: Tambah karyawan + akun (HR). meta.temp_password terisi bila password tidak diberikan.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /employees/{id}:
+    get:
+      tags: [Master]
+      summary: Detail karyawan (diri sendiri, manajer timnya, HR, Direktur)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeEnvelope" } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+    put:
+      tags: [Master]
+      summary: Ubah karyawan, atasan, status, dan role (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmployeeInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+    delete:
+      tags: [Master]
+      summary: Nonaktifkan + soft delete karyawan (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: Dihapus }, "400": { $ref: "#/components/responses/Error" }, "403": { $ref: "#/components/responses/Error" } }
+  /employees/import:
+    post:
+      tags: [Master]
+      summary: Import karyawan dari Excel (HR). Semua-atau-tidak-sama-sekali.
+      description: |
+        Kolom: NIK, Nama, Email, Telepon, Kode Departemen, Jabatan, Email Atasan, Tanggal Masuk, Role, Password.
+        Sukses → `data.created` dan `data.credentials` (password sementara, hanya ditampilkan sekali).
+        Ada baris salah → 422 `import_invalid` dan `data.errors[{row,message}]`; tidak ada yang tersimpan.
+      requestBody:
+        required: true
+        content: { multipart/form-data: { schema: { type: object, required: [file], properties: { file: { type: string, format: binary } } } } }
+      responses:
+        "200": { description: Diimpor, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/ImportResult" } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { description: Berkas salah, content: { application/json: { schema: { type: object, properties: { error: { $ref: "#/components/schemas/ErrorBody" }, data: { $ref: "#/components/schemas/ImportResult" } } } } } }
+  /employees-import-template:
+    get:
+      tags: [Master]
+      summary: Unduh template import (.xlsx) (HR)
+      responses:
+        "200": { description: Berkas Excel, content: { application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: { schema: { type: string, format: binary } } } }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /periods:
+    get:
+      tags: [Periode]
+      summary: Daftar periode (non-HR tidak melihat draft)
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/Period" } } } } } } } }
+    post:
+      tags: [Periode]
+      summary: Buat periode (HR); status awal draft
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PeriodInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /periods/{id}:
+    get:
+      tags: [Periode]
+      summary: Detail periode
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "404": { $ref: "#/components/responses/Error" } }
+    put:
+      tags: [Periode]
+      summary: Ubah periode/bobot (HR); periode closed → 423
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PeriodInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "423": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/open:
+    post:
+      tags: [Periode]
+      summary: Draft → Aktif (HR, diaudit)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/close:
+    post:
+      tags: [Periode]
+      summary: Aktif → Ditutup; data terkunci (HR, diaudit)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/reopen:
+    post:
+      tags: [Periode]
+      summary: Ditutup → Aktif (hanya HR, diaudit)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+
+  /kpi-templates:
+    get:
+      tags: [KPI]
+      summary: Template KPI semua departemen (HR, Direktur)
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/Template" } } } } } } }, "403": { $ref: "#/components/responses/Error" } }
+    post:
+      tags: [KPI]
+      summary: Buat template kosong untuk satu departemen (HR)
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [department_id, name], properties: { department_id: { type: integer }, name: { type: string } } } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" } }
+  /kpi-templates/{id}:
+    get:
+      tags: [KPI]
+      summary: Detail template + indikator (HR, Direktur)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" } }
+    put:
+      tags: [KPI]
+      summary: Simpan template; total bobot wajib 100% (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TemplateInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "422": { description: "Bobot ≠ 100% atau data salah (fields.indicators)", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } } }
+  /behavior-aspects:
+    get:
+      tags: [Penilaian]
+      summary: Aspek perilaku (disiplin, kerja sama tim, inisiatif, komunikasi, tanggung jawab)
+      responses: { "200": { description: OK } }
+
+  /kpi/sheet:
+    get:
+      tags: [KPI]
+      summary: Lembar KPI satu karyawan pada satu periode
+      description: Default employee_id = diri sendiri, period_id = periode aktif terbaru.
+      parameters:
+        - { name: employee_id, in: query, schema: { type: integer } }
+        - { name: period_id, in: query, schema: { type: integer } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/KpiSheet" } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+  /kpi/results:
+    put:
+      tags: [KPI]
+      summary: Input/ubah realisasi. Karyawan → submitted; atasan untuk anggota timnya → langsung validated.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [period_id, indicator_id, actual], properties: { period_id: { type: integer }, employee_id: { type: integer, description: "default diri sendiri" }, indicator_id: { type: integer }, actual: { type: number, minimum: 0 }, note: { type: string } } } } }
+      responses:
+        "200": { description: OK }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "423": { description: Periode/penilaian terkunci, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /kpi/results/{id}/validate:
+    post:
+      tags: [KPI]
+      summary: Validasi atau tolak realisasi anggota tim (manajer; Direktur untuk manajer). Diaudit.
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [action], properties: { action: { type: string, enum: [validate, reject] }, note: { type: string, description: "wajib untuk reject" } } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" }, "423": { $ref: "#/components/responses/Error" } }
+  /kpi/results/{id}/evidence:
+    post:
+      tags: [KPI]
+      summary: Unggah bukti (PDF/JPG/PNG, maks. 5 MB; satu berkas per realisasi, menggantikan yang lama)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content: { multipart/form-data: { schema: { type: object, required: [file], properties: { file: { type: string, format: binary } } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" }, "423": { $ref: "#/components/responses/Error" } }
+    get:
+      tags: [KPI]
+      summary: Unduh bukti (hanya pemilik, atasan timnya, HR, Direktur). ?download=1 untuk attachment.
+      parameters: [{ $ref: "#/components/parameters/Id" }, { name: download, in: query, schema: { type: string, enum: ["1"] } }]
+      responses:
+        "200": { description: Berkas, content: { application/pdf: {}, image/png: {}, image/jpeg: {} } }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /periods/{id}/team:
+    get:
+      tags: [Penilaian]
+      summary: Daftar anggota tim + status penilaian (manajer; Direktur melihat para manajer)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/appraisals/{employee_id}:
+    get:
+      tags: [Penilaian]
+      summary: Form penilaian (KPI, aspek perilaku self vs atasan, skor akhir). Nilai atasan disembunyikan dari karyawan sampai final.
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EmployeeId" }]
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/AppraisalView" } } } } } }, "403": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/appraisals/{employee_id}/self:
+    put:
+      tags: [Penilaian]
+      summary: Self-assessment (hanya pemilik). submit=true mensyaratkan semua aspek terisi.
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EmployeeId" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/SelfInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" }, "423": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/appraisals/{employee_id}/manager:
+    put:
+      tags: [Penilaian]
+      summary: Penilaian atasan (draf atau kirim). Kirim → skor & predikat dihitung.
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EmployeeId" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ManagerInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" }, "423": { $ref: "#/components/responses/Error" } }
+  /periods/{id}/appraisals/{employee_id}/finalize:
+    post:
+      tags: [Penilaian]
+      summary: Finalisasi (HR/Direktur). Syarat - sudah dinilai atasan dan semua realisasi KPI tervalidasi. Diaudit.
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EmployeeId" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" }, "423": { $ref: "#/components/responses/Error" } }
+
+  /dashboard/employee:
+    get:
+      tags: [Dasbor]
+      summary: Dasbor karyawan (H-02)
+      parameters: [{ $ref: "#/components/parameters/PeriodQuery" }]
+      responses: { "200": { description: OK } }
+  /dashboard/manager:
+    get:
+      tags: [Dasbor]
+      summary: Dasbor manajer (H-03); cache 5 menit
+      parameters: [{ $ref: "#/components/parameters/PeriodQuery" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" } }
+  /dashboard/director:
+    get:
+      tags: [Dasbor]
+      summary: Dasbor direktur (H-04); cache 5 menit
+      parameters: [{ $ref: "#/components/parameters/PeriodQuery" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" } }
+
+  /reports/scores:
+    get:
+      tags: [Laporan]
+      summary: Tabel skor per periode/departemen (HR, Direktur)
+      parameters: [{ $ref: "#/components/parameters/PeriodQuery" }, { name: department_id, in: query, schema: { type: integer } }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" } }
+  /reports/scores/export:
+    get:
+      tags: [Laporan]
+      summary: Ekspor laporan ke Excel atau PDF (HR, Direktur)
+      parameters:
+        - { $ref: "#/components/parameters/PeriodQuery" }
+        - { name: department_id, in: query, schema: { type: integer } }
+        - { name: format, in: query, schema: { type: string, enum: [xlsx, pdf], default: xlsx } }
+      responses:
+        "200": { description: Berkas, content: { application/vnd.openxmlformats-officedocument.spreadsheetml.sheet: {}, application/pdf: {} } }
+        "403": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /activity-log:
+    get:
+      tags: [Lainnya]
+      summary: Audit log (HR)
+      parameters:
+        - { name: action, in: query, schema: { type: string } }
+        - { name: subject_type, in: query, schema: { type: string } }
+        - { name: subject_id, in: query, schema: { type: integer } }
+        - { name: page, in: query, schema: { type: integer } }
+        - { name: per_page, in: query, schema: { type: integer } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" } }
+  /notifications:
+    get:
+      tags: [Lainnya]
+      summary: Notifikasi in-app milik sendiri (pembuatan otomatis menyusul di Rilis 2)
+      responses: { "200": { description: "OK; data = {items, unread}" } }
+  /notifications/read-all:
+    post:
+      tags: [Lainnya]
+      summary: Tandai semua terbaca
+      responses: { "204": { description: OK } }
+  /notifications/{id}/read:
+    post:
+      tags: [Lainnya]
+      summary: Tandai satu notifikasi terbaca
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: OK } }
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sk_at
+      description: Access token JWT di cookie httpOnly (SameSite=Lax; Secure di production).
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    EmployeeId: { name: employee_id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    PeriodQuery: { name: period_id, in: query, schema: { type: integer }, description: "Default periode aktif terbaru" }
+  responses:
+    Error:
+      description: Kesalahan standar
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+  schemas:
+    ErrorBody:
+      type: object
+      properties:
+        code: { type: string, enum: [bad_request, unauthorized, forbidden, not_found, conflict, period_locked, validation_error, too_many_requests, payload_too_large, import_invalid, internal_error] }
+        message: { type: string }
+        fields: { type: object, additionalProperties: { type: string }, nullable: true }
+    Error:
+      type: object
+      properties: { error: { $ref: "#/components/schemas/ErrorBody" } }
+    PageMeta:
+      type: object
+      properties: { page: { type: integer }, per_page: { type: integer }, total: { type: integer } }
+    Decimal: { type: string, example: "95.65" }
+    Department:
+      type: object
+      properties: { id: { type: integer }, name: { type: string }, code: { type: string }, head_id: { type: integer, nullable: true } }
+    DepartmentInput:
+      type: object
+      required: [name, code]
+      properties: { name: { type: string }, code: { type: string }, head_id: { type: integer, nullable: true } }
+    PositionInput:
+      type: object
+      required: [name]
+      properties: { name: { type: string }, department_id: { type: integer, nullable: true } }
+    Employee:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        nik: { type: string }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        department_id: { type: integer, nullable: true }
+        position_id: { type: integer, nullable: true }
+        manager_id: { type: integer, nullable: true }
+        join_date: { type: string, format: date-time }
+        status: { type: string, enum: [active, inactive] }
+        roles: { type: array, items: { type: string, enum: [employee, manager, hr, director] } }
+        has_photo: { type: boolean }
+        department: { $ref: "#/components/schemas/Department" }
+    EmployeeEnvelope:
+      type: object
+      properties: { data: { $ref: "#/components/schemas/Employee" } }
+    EmployeeInput:
+      type: object
+      required: [nik, name, email, join_date]
+      properties:
+        nik: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        department_id: { type: integer, nullable: true, description: "wajib untuk role employee/manager" }
+        position_id: { type: integer, nullable: true }
+        manager_id: { type: integer, nullable: true }
+        join_date: { type: string, format: date, example: "2026-01-15" }
+        status: { type: string, enum: [active, inactive] }
+        roles: { type: array, items: { type: string } }
+        password: { type: string, description: "opsional saat membuat; kosong = dibuat acak" }
+    ImportResult:
+      type: object
+      properties:
+        created: { type: integer }
+        positions_created: { type: integer }
+        errors: { type: array, items: { type: object, properties: { row: { type: integer }, message: { type: string } } } }
+        credentials: { type: array, items: { type: object, properties: { nik: { type: string }, email: { type: string }, temp_password: { type: string } } } }
+    Period:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        type: { type: string, enum: [monthly, quarterly] }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time }
+        status: { type: string, enum: [draft, active, closed] }
+        kpi_weight: { $ref: "#/components/schemas/Decimal" }
+        behavior_weight: { $ref: "#/components/schemas/Decimal" }
+    PeriodInput:
+      type: object
+      required: [name, type, start_date, end_date, kpi_weight, behavior_weight]
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [monthly, quarterly] }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        kpi_weight: { type: number, example: 70 }
+        behavior_weight: { type: number, example: 30, description: "kpi_weight + behavior_weight = 100" }
+    Indicator:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        unit: { type: string }
+        target: { $ref: "#/components/schemas/Decimal" }
+        weight: { $ref: "#/components/schemas/Decimal" }
+        direction: { type: string, enum: [higher, lower] }
+        source: { type: string, enum: [manual, integration] }
+        sort: { type: integer }
+    Template:
+      type: object
+      properties:
+        id: { type: integer }
+        department_id: { type: integer }
+        name: { type: string }
+        is_active: { type: boolean }
+        total_weight: { $ref: "#/components/schemas/Decimal" }
+        indicators: { type: array, items: { $ref: "#/components/schemas/Indicator" } }
+    TemplateInput:
+      type: object
+      required: [name, indicators]
+      properties:
+        name: { type: string }
+        is_active: { type: boolean }
+        indicators:
+          type: array
+          items:
+            type: object
+            required: [name, target, weight, direction]
+            properties:
+              id: { type: integer, description: "0/kosong = indikator baru; yang tidak disebut akan dihapus (soft delete)" }
+              name: { type: string }
+              unit: { type: string }
+              target: { type: number, exclusiveMinimum: true, minimum: 0 }
+              weight: { type: number, description: "persen; total semua indikator = 100" }
+              direction: { type: string, enum: [higher, lower] }
+              source: { type: string, enum: [manual, integration] }
+    KpiSheet:
+      type: object
+      properties:
+        employee: { $ref: "#/components/schemas/Employee" }
+        period: { $ref: "#/components/schemas/Period" }
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              indicator: { $ref: "#/components/schemas/Indicator" }
+              result: { type: object, nullable: true, description: "id, actual, achievement, note, status (submitted|validated|rejected), evidence_name, validation_note" }
+              achievement: { $ref: "#/components/schemas/Decimal" }
+              points: { $ref: "#/components/schemas/Decimal" }
+              status: { type: string, enum: [missing, submitted, validated, rejected] }
+              has_evidence: { type: boolean }
+        score: { $ref: "#/components/schemas/Decimal" }
+        total: { type: integer }
+        validated: { type: integer }
+        pending: { type: integer }
+        rejected: { type: integer }
+        missing: { type: integer }
+        all_validated: { type: boolean }
+        can_input: { type: boolean }
+        can_validate: { type: boolean }
+    SelfInput:
+      type: object
+      properties:
+        scores: { type: object, additionalProperties: { type: integer, minimum: 1, maximum: 5 }, description: "aspect_id → 1..5" }
+        comment: { type: string }
+        submit: { type: boolean }
+    ManagerInput:
+      type: object
+      properties:
+        scores: { type: object, additionalProperties: { type: integer, minimum: 1, maximum: 5 } }
+        manager_comment: { type: string }
+        development_plan: { type: string }
+        submit: { type: boolean }
+    AppraisalView:
+      type: object
+      properties:
+        appraisal_id: { type: integer }
+        status: { type: string, enum: [draft, self_done, manager_done, final] }
+        employee: { $ref: "#/components/schemas/Employee" }
+        period: { $ref: "#/components/schemas/Period" }
+        aspects: { type: array, items: { type: object, properties: { aspect: { type: object }, self_score: { type: integer, nullable: true }, manager_score: { type: integer, nullable: true } } } }
+        kpi: { $ref: "#/components/schemas/KpiSheet" }
+        kpi_score: { $ref: "#/components/schemas/Decimal" }
+        behavior_score: { $ref: "#/components/schemas/Decimal" }
+        final_score: { $ref: "#/components/schemas/Decimal" }
+        grade: { type: string, enum: [Istimewa, Baik, Cukup, Perlu Perbaikan, Kurang] }
+        previous: { type: object, nullable: true }
+        can_self: { type: boolean }
+        can_manager: { type: boolean }
+        can_finalize: { type: boolean }
+        hidden_from_employee: { type: boolean }
