@@ -3,14 +3,14 @@
 Centang `[x]` saat selesai. Urutan = urutan pengerjaan.
 
 ## A. Fondasi
-- [ ] 1. PLAN.md + DECISIONS.md
+- [x] 1. PLAN.md + DECISIONS.md
 - [ ] 2. Monorepo: `backend/`, `frontend/`, `docker-compose.yml`, `Makefile`, `.env.example`, README
 - [ ] 3. Backend: config, DB, Redis, logger, router, format respons/error
 - [ ] 4. Migrasi SQL + model semua tabel kecuali `leave_*` dan `holidays`
 
 ## B. Backend inti
-- [ ] 5. KpiScoreService + test (capaian, cap 120, higher/lower, realisasi 0, skor berbobot)
-- [ ] 6. AppraisalService (skor perilaku, skor akhir, predikat) + test (89,99/90; contoh H-07 → 93,4 Istimewa)
+- [x] 5. KpiScoreService + test (capaian, cap 120, higher/lower, realisasi 0, skor berbobot)
+- [x] 6. AppraisalService (skor perilaku, skor akhir, predikat) + test (89,99/90; contoh H-07 → 93,4 Istimewa)
 - [ ] 7. Auth: login, refresh, logout, lupa/reset password, ganti password, rate limit Redis
 - [ ] 8. Middleware auth + RBAC + cek kepemilikan data (karyawan/manajer/HR/direktur)
 - [ ] 9. Audit log (`activity_log`)
