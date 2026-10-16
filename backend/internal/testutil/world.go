@@ -30,6 +30,8 @@ type World struct {
 	Cfg    config.Config
 	Mailer *FakeMailer
 
+	nikSeq int
+
 	ITS, CS *model.Department
 
 	HR, Director          *model.Employee
@@ -51,8 +53,6 @@ func (f *FakeMailer) SendPasswordReset(to, name, link string) error {
 	f.Sent = append(f.Sent, Sent{to, name, link})
 	return nil
 }
-
-var nikSeq int
 
 func NewWorld(t testing.TB) *World {
 	t.Helper()
@@ -110,8 +110,8 @@ func (w *World) person(name, email string, dept, manager *uint64, roles ...strin
 	u := &model.User{Email: email, Password: hash, IsActive: true}
 	must(t, r.Users.Create(u))
 	must(t, r.Users.SetRoles(u.ID, roles))
-	nikSeq++
-	e := &model.Employee{UserID: u.ID, NIK: fmt.Sprintf("T-%04d", nikSeq), Name: name, DepartmentID: dept,
+	w.nikSeq++
+	e := &model.Employee{UserID: u.ID, NIK: fmt.Sprintf("T-%04d", w.nikSeq), Name: name, DepartmentID: dept,
 		ManagerID: manager, JoinDate: date(2021, 5, 3), Status: model.StatusActive}
 	must(t, r.Employees.Create(e))
 	return e

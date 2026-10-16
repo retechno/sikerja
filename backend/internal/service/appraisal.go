@@ -567,16 +567,15 @@ func teamMembers(r repository.Repos, a Actor) ([]model.Employee, error) {
 	return out, nil
 }
 
-// Team menampilkan status penilaian anggota tim dengan jumlah query tetap (tanpa N+1).
-func (s AppraisalService) Team(a Actor, periodID uint64) (*TeamView, error) {
-	if !a.HasAny(model.RoleManager, model.RoleDirector) {
-		return nil, apperr.Forbidden("Hanya manajer yang dapat membuka penilaian tim")
-	}
-	r := s.store.R()
-	p, err := loadPeriod(r, periodID)
-	if err != nil {
-		return nil, err
-	}
+// teamData adalah muatan data tim (jumlah query tetap, tidak bergantung jumlah anggota).
+type teamData struct {
+	Period  *model.AppraisalPeriod
+	Members []model.Employee
+	Sheets  map[uint64]*KpiSheet
+	Apprs   map[uint64]model.Appraisal
+}
+
+func loadTeamData(r repository.Repos, a Actor, p *model.AppraisalPeriod) (*teamData, error) {
 	members, err := teamMembers(r, a)
 	if err != nil {
 		return nil, err
@@ -607,21 +606,42 @@ func (s AppraisalService) Team(a Actor, periodID uint64) (*TeamView, error) {
 	if err != nil {
 		return nil, err
 	}
-	apByEmp := map[uint64]model.Appraisal{}
+	td := &teamData{Period: p, Members: members, Sheets: map[uint64]*KpiSheet{}, Apprs: map[uint64]model.Appraisal{}}
 	for _, x := range appraisals {
-		apByEmp[x.EmployeeID] = x
+		td.Apprs[x.EmployeeID] = x
 	}
-
-	view := &TeamView{Period: p, Rows: []TeamRow{}}
 	for i := range members {
 		m := &members[i]
 		sh, err := assembleSheet(KpiScoreService{}, m, p, tpls[*m.DepartmentID], byEmp[m.ID])
 		if err != nil {
 			return nil, err
 		}
+		td.Sheets[m.ID] = sh
+	}
+	return td, nil
+}
+
+// Team menampilkan status penilaian anggota tim dengan jumlah query tetap (tanpa N+1).
+func (s AppraisalService) Team(a Actor, periodID uint64) (*TeamView, error) {
+	if !a.HasAny(model.RoleManager, model.RoleDirector) {
+		return nil, apperr.Forbidden("Hanya manajer yang dapat membuka penilaian tim")
+	}
+	r := s.store.R()
+	p, err := loadPeriod(r, periodID)
+	if err != nil {
+		return nil, err
+	}
+	td, err := loadTeamData(r, a, p)
+	if err != nil {
+		return nil, err
+	}
+	view := &TeamView{Period: p, Rows: []TeamRow{}}
+	for i := range td.Members {
+		m := &td.Members[i]
+		sh := td.Sheets[m.ID]
 		row := TeamRow{Employee: m, Status: model.AppraisalDraft, KpiScore: sh.Score, KpiTotal: sh.Total,
 			KpiValidated: sh.Validated, KpiPending: sh.Pending}
-		if ap, ok := apByEmp[m.ID]; ok {
+		if ap, ok := td.Apprs[m.ID]; ok {
 			row.Status = ap.Status
 			row.SelfDone = ap.Status != model.AppraisalDraft || ap.SelfSubmittedAt != nil
 			if ap.FinalScore.Valid && (ap.Status == model.AppraisalManagerDone || ap.Status == model.AppraisalFinal) {

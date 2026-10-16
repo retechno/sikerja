@@ -235,6 +235,8 @@ type AppraisalRepo interface {
 	Find(periodID, employeeID uint64) (*model.Appraisal, error)
 	ByID(id uint64) (*model.Appraisal, error)
 	ForEmployees(periodID uint64, employeeIDs []uint64) ([]model.Appraisal, error)
+	// ByEmployee: penilaian satu karyawan pada beberapa periode (untuk riwayat).
+	ByEmployee(employeeID uint64, periodIDs []uint64) ([]model.Appraisal, error)
 	Create(a *model.Appraisal) error
 	Save(a *model.Appraisal) error
 	// UpsertScore menyimpan satu nilai; column = "self_score" atau "manager_score" (kolom lain tidak disentuh).
@@ -267,6 +269,15 @@ func (r *appraisalRepo) ForEmployees(periodID uint64, ids []uint64) ([]model.App
 		return out, nil
 	}
 	err := r.db.Preload("Scores").Where("period_id = ? AND employee_id IN ?", periodID, ids).Find(&out).Error
+	return out, err
+}
+
+func (r *appraisalRepo) ByEmployee(employeeID uint64, periodIDs []uint64) ([]model.Appraisal, error) {
+	var out []model.Appraisal
+	if len(periodIDs) == 0 {
+		return out, nil
+	}
+	err := r.db.Where("employee_id = ? AND period_id IN ?", employeeID, periodIDs).Find(&out).Error
 	return out, err
 }
 
