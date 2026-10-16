@@ -11,7 +11,7 @@ const props = defineProps<{
   min?: number
   max?: number
   height?: number
-  ariaLabel: string
+  description: string
 }>()
 
 const data = computed(() => ({
@@ -32,7 +32,10 @@ const data = computed(() => ({
 const options = computed<ChartOptions<'line'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${fmtScore(c.parsed.y)}` } } },
+  plugins: {
+    legend: { display: false },
+    tooltip: { callbacks: { label: (c) => ` ${fmtScore(c.parsed.y)}` } },
+  },
   scales: {
     x: { grid: { display: false } },
     y: { min: props.min ?? 60, max: props.max ?? 100, grid: { color: COLORS.line } },
@@ -41,7 +44,7 @@ const options = computed<ChartOptions<'line'>>(() => ({
 </script>
 
 <template>
-  <div :style="{ height: (height ?? 220) + 'px' }" role="img" :aria-label="ariaLabel">
+  <div :style="{ height: (height ?? 220) + 'px' }" role="img" :aria-label="description">
     <Line :data="data" :options="options" />
   </div>
 </template>

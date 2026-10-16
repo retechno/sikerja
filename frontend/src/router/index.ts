@@ -15,7 +15,12 @@ declare module 'vue-router' {
 }
 
 export const routes: RouteRecordRaw[] = [
-  { path: '/login', name: 'login', component: () => import('@/pages/auth/LoginPage.vue'), meta: { public: true, title: 'Masuk' } },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/pages/auth/LoginPage.vue'),
+    meta: { public: true, title: 'Masuk' },
+  },
   {
     path: '/forgot-password',
     name: 'forgot',
@@ -106,8 +111,18 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/settings/SettingsPage.vue'),
         meta: { title: 'Pengaturan', roles: ['hr'] },
       },
-      { path: 'profil', name: 'profil', component: () => import('@/pages/profile/ProfilePage.vue'), meta: { title: 'Profil' } },
-      { path: ':pathMatch(.*)*', name: 'not-found', component: () => import('@/pages/NotFoundPage.vue'), meta: { title: 'Tidak ditemukan' } },
+      {
+        path: 'profil',
+        name: 'profil',
+        component: () => import('@/pages/profile/ProfilePage.vue'),
+        meta: { title: 'Profil' },
+      },
+      {
+        path: ':pathMatch(.*)*',
+        name: 'not-found',
+        component: () => import('@/pages/NotFoundPage.vue'),
+        meta: { title: 'Tidak ditemukan' },
+      },
     ],
   },
 ]

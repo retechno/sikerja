@@ -14,7 +14,7 @@ const props = defineProps<{
   max?: number
   colors?: string[]
   height?: number
-  ariaLabel: string
+  description: string
 }>()
 
 const data = computed(() => ({
@@ -48,7 +48,7 @@ const options = computed<ChartOptions<'bar'>>(() => {
 </script>
 
 <template>
-  <div :style="{ height: (height ?? 220) + 'px' }" role="img" :aria-label="ariaLabel">
+  <div :style="{ height: (height ?? 220) + 'px' }" role="img" :aria-label="description">
     <Bar :data="data" :options="options" />
   </div>
 </template>

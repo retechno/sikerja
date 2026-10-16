@@ -14,8 +14,7 @@
     "resolveJsonModule": true,
     "jsx": "preserve",
     "types": ["vite/client", "vitest/globals", "node"],
-    "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"]
 }

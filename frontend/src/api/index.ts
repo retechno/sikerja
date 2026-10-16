@@ -13,6 +13,7 @@ import type {
   NotificationItem,
   PageMeta,
   Period,
+  PeriodProgress,
   Position,
   ReportView,
   SelfPayload,
@@ -55,6 +56,7 @@ export const master = {
   savePosition: (id: number | null, body: { name: string; department_id: number | null }) =>
     id ? send<Position>('put', `/positions/${id}`, body) : send<Position>('post', '/positions', body),
   deletePosition: (id: number) => send<void>('delete', `/positions/${id}`),
+  aspects: () => get<{ id: number; name: string; description: string }[]>('/behavior-aspects'),
 }
 
 export interface EmployeeBody {
@@ -108,6 +110,7 @@ export interface PeriodBody {
 
 export const periods = {
   list: () => get<Period[]>('/periods'),
+  progress: () => get<PeriodProgress[]>('/periods/progress'),
   create: (b: PeriodBody) => send<Period>('post', '/periods', b),
   update: (id: number, b: PeriodBody) => send<Period>('put', `/periods/${id}`, b),
   open: (id: number) => send<Period>('post', `/periods/${id}/open`),
@@ -131,15 +134,21 @@ export interface TemplateBody {
 
 export const templates = {
   list: () => get<Template[]>('/kpi-templates'),
-  create: (department_id: number, name: string) => send<Template>('post', '/kpi-templates', { department_id, name }),
+  create: (department_id: number, name: string) =>
+    send<Template>('post', '/kpi-templates', { department_id, name }),
   save: (id: number, b: TemplateBody) => send<Template>('put', `/kpi-templates/${id}`, b),
 }
 
 // ---------- KPI ----------
 export const kpi = {
   sheet: (params: { employee_id?: number; period_id?: number }) => get<KpiSheet>('/kpi/sheet', params),
-  saveResult: (b: { period_id: number; employee_id: number; indicator_id: number; actual: number; note: string }) =>
-    send<KpiResult>('put', '/kpi/results', b),
+  saveResult: (b: {
+    period_id: number
+    employee_id: number
+    indicator_id: number
+    actual: number
+    note: string
+  }) => send<KpiResult>('put', '/kpi/results', b),
   validate: (id: number, action: 'validate' | 'reject', note = '') =>
     send<KpiResult>('post', `/kpi/results/${id}/validate`, { action, note }),
   uploadEvidence: async (id: number, file: File) => {
@@ -152,7 +161,8 @@ export const kpi = {
 
 // ---------- penilaian ----------
 export const appraisals = {
-  get: (periodId: number, employeeId: number) => get<AppraisalView>(`/periods/${periodId}/appraisals/${employeeId}`),
+  get: (periodId: number, employeeId: number) =>
+    get<AppraisalView>(`/periods/${periodId}/appraisals/${employeeId}`),
   saveSelf: (periodId: number, employeeId: number, b: SelfPayload) =>
     send<AppraisalView>('put', `/periods/${periodId}/appraisals/${employeeId}/self`, b),
   saveManager: (periodId: number, employeeId: number, b: ManagerPayload) =>
@@ -170,7 +180,8 @@ export const dashboard = {
 }
 
 export const reports = {
-  scores: (params: { period_id?: number; department_id?: number }) => get<ReportView>('/reports/scores', params),
+  scores: (params: { period_id?: number; department_id?: number }) =>
+    get<ReportView>('/reports/scores', params),
   export: (format: 'xlsx' | 'pdf', params: { period_id?: number; department_id?: number }) =>
     download('/reports/scores/export', { ...params, format }, `laporan-kinerja.${format}`),
 }

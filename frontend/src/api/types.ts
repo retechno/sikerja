@@ -167,7 +167,13 @@ export interface TeamRow {
 export interface TeamView {
   period: Period
   rows: TeamRow[]
-  summary: { members: number; appraised: number; finalized: number; pending_kpi: number; not_appraised: number }
+  summary: {
+    members: number
+    appraised: number
+    finalized: number
+    pending_kpi: number
+    not_appraised: number
+  }
 }
 
 export interface EmployeeDash {
@@ -180,7 +186,12 @@ export interface EmployeeDash {
   appraisal_status: AppraisalStatus
   final_score: Dec | null
   grade: string
-  latest_final: { period_name: string; score: Dec; grade: string; next: { grade: string; gap: Dec } | null } | null
+  latest_final: {
+    period_name: string
+    score: Dec
+    grade: string
+    next: { grade: string; gap: Dec } | null
+  } | null
   deadline: string
   days_left: number
   pending_validation: number
@@ -280,4 +291,16 @@ export interface PageMeta {
   page: number
   per_page: number
   total: number
+}
+
+export interface PeriodProgress {
+  period_id: number
+  employees: number
+  expected_results: number
+  results: number
+  validated: number
+  self_done: number
+  manager_done: number
+  finalized: number
+  avg_final: Dec | null
 }

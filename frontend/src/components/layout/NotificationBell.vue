@@ -44,9 +44,15 @@ onMounted(load)
       @click="open = !open"
     >
       <Icon name="bell" :size="20" />
-      <span v-if="unread > 0" class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full border-2 border-white bg-[#C2410C]" />
+      <span
+        v-if="unread > 0"
+        class="absolute right-2.5 top-2.5 h-2 w-2 rounded-full border-2 border-white bg-[#C2410C]"
+      />
     </button>
-    <div v-if="open" class="absolute right-0 top-[52px] z-20 w-72 rounded-xl border border-line bg-white shadow-lg">
+    <div
+      v-if="open"
+      class="absolute right-0 top-[52px] z-20 w-72 rounded-xl border border-line bg-white shadow-lg"
+    >
       <div class="flex items-center justify-between border-b border-line px-4 py-3">
         <b>Notifikasi</b>
         <button v-if="unread > 0" type="button" class="text-xs font-semibold text-primary" @click="readAll">

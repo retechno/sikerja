@@ -56,13 +56,30 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, loaded, roles, has, isEmployee, isManager, isHR, isDirector, home, fetchMe, login, logout, setUser, clear }
+  return {
+    user,
+    loaded,
+    roles,
+    has,
+    isEmployee,
+    isManager,
+    isHR,
+    isDirector,
+    home,
+    fetchMe,
+    login,
+    logout,
+    setUser,
+    clear,
+  }
 })
 
 /** Hubungkan klien HTTP: bila refresh gagal, bersihkan sesi dan kembali ke halaman login. */
 export function bindSessionExpiry(redirect: () => void) {
   onSessionExpired(() => {
-    useAuthStore().clear()
+    const store = useAuthStore()
+    if (!store.user) return // pengunjung belum login: bukan sesi yang berakhir
+    store.clear()
     redirect()
   })
 }

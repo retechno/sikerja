@@ -9,12 +9,22 @@ import type { AppraisalView } from '@/api'
 // Skor akhir dihitung ulang di sini hanya sebagai pratinjau; angka resmi dari backend.
 const props = defineProps<{ view: AppraisalView; busy?: boolean }>()
 const emit = defineEmits<{
-  save: [payload: { scores: Record<number, number>; comment: string; managerComment: string; developmentPlan: string }, submit: boolean]
+  save: [
+    payload: {
+      scores: Record<number, number>
+      comment: string
+      managerComment: string
+      developmentPlan: string
+    },
+    submit: boolean,
+  ]
   finalize: []
 }>()
 
 type Mode = 'manager' | 'self' | 'readonly'
-const mode = computed<Mode>(() => (props.view.can_manager ? 'manager' : props.view.can_self ? 'self' : 'readonly'))
+const mode = computed<Mode>(() =>
+  props.view.can_manager ? 'manager' : props.view.can_self ? 'self' : 'readonly',
+)
 const aspects = computed(() => props.view.aspects ?? [])
 
 const scores = reactive<Record<number, number | null>>({})
@@ -45,13 +55,18 @@ const managerValues = computed(() =>
     : aspects.value.map((a) => a.manager_score).filter((v): v is number => v != null),
 )
 const behavior = computed<number | null>(() => {
-  if (aspects.value.length > 0 && managerValues.value.length === aspects.value.length) return behaviorScore(managerValues.value)
+  if (aspects.value.length > 0 && managerValues.value.length === aspects.value.length)
+    return behaviorScore(managerValues.value)
   return props.view.behavior_score != null ? Number(props.view.behavior_score) : null
 })
 const average = computed(() =>
-  managerValues.value.length ? managerValues.value.reduce((a, b) => a + b, 0) / managerValues.value.length : null,
+  managerValues.value.length
+    ? managerValues.value.reduce((a, b) => a + b, 0) / managerValues.value.length
+    : null,
 )
-const final = computed<number | null>(() => (behavior.value != null ? finalScore(kpi.value, behavior.value, kw.value, bw.value) : null))
+const final = computed<number | null>(() =>
+  behavior.value != null ? finalScore(kpi.value, behavior.value, kw.value, bw.value) : null,
+)
 const grade = computed(() => (final.value != null ? gradeOf(final.value) : ''))
 const showScore = computed(() => !props.view.hidden_from_employee)
 
@@ -61,7 +76,12 @@ function payload() {
     const v = scores[a.aspect.id]
     if (v != null) s[a.aspect.id] = v
   }
-  return { scores: s, comment: text.comment, managerComment: text.managerComment, developmentPlan: text.developmentPlan }
+  return {
+    scores: s,
+    comment: text.comment,
+    managerComment: text.managerComment,
+    developmentPlan: text.developmentPlan,
+  }
 }
 </script>
 
@@ -88,7 +108,11 @@ function payload() {
             <b>{{ a.aspect.name }}</b>
             <div class="muted text-[12.5px]">{{ a.aspect.description }}</div>
           </div>
-          <span v-if="mode !== 'self' && a.self_score != null" class="whitespace-nowrap rounded-lg bg-canvas px-2.5 py-1.5 text-xs text-ink-soft" data-testid="self-pill">
+          <span
+            v-if="mode !== 'self' && a.self_score != null"
+            class="whitespace-nowrap rounded-lg bg-canvas px-2.5 py-1.5 text-xs text-ink-soft"
+            data-testid="self-pill"
+          >
             Karyawan: {{ a.self_score }}
           </span>
           <AspectScale
@@ -114,27 +138,56 @@ function payload() {
         </div>
         <label v-else class="field">
           Catatan pencapaian
-          <textarea v-model="text.comment" class="input" :disabled="!editable || busy" maxlength="5000" data-testid="self-comment" />
+          <textarea
+            v-model="text.comment"
+            class="input"
+            :disabled="!editable || busy"
+            maxlength="5000"
+            data-testid="self-comment"
+          />
         </label>
 
         <template v-if="mode === 'manager'">
           <label class="field">
             Komentar atasan
-            <textarea v-model="text.managerComment" class="input" :disabled="busy" maxlength="5000" data-testid="manager-comment" />
+            <textarea
+              v-model="text.managerComment"
+              class="input"
+              :disabled="busy"
+              maxlength="5000"
+              data-testid="manager-comment"
+            />
           </label>
           <label class="field">
             Rencana pengembangan
-            <textarea v-model="text.developmentPlan" class="input" :disabled="busy" maxlength="5000" data-testid="development-plan" />
+            <textarea
+              v-model="text.developmentPlan"
+              class="input"
+              :disabled="busy"
+              maxlength="5000"
+              data-testid="development-plan"
+            />
           </label>
         </template>
         <template v-else-if="view.hidden_from_employee">
           <p class="m-0 rounded-[10px] bg-info-bg px-3.5 py-3 text-info-fg" data-testid="hidden-note">
-            Nilai, komentar, dan rencana pengembangan dari atasan akan terlihat setelah penilaian difinalisasi.
+            Nilai, komentar, dan rencana pengembangan dari atasan akan terlihat setelah penilaian
+            difinalisasi.
           </p>
         </template>
         <template v-else>
-          <div class="field">Komentar atasan<div class="rounded-[10px] bg-canvas px-3.5 py-3 font-normal">{{ view.manager_comment || '—' }}</div></div>
-          <div class="field">Rencana pengembangan<div class="rounded-[10px] bg-canvas px-3.5 py-3 font-normal">{{ view.development_plan || '—' }}</div></div>
+          <div class="field">
+            Komentar atasan
+            <div class="rounded-[10px] bg-canvas px-3.5 py-3 font-normal">
+              {{ view.manager_comment || '—' }}
+            </div>
+          </div>
+          <div class="field">
+            Rencana pengembangan
+            <div class="rounded-[10px] bg-canvas px-3.5 py-3 font-normal">
+              {{ view.development_plan || '—' }}
+            </div>
+          </div>
         </template>
       </section>
     </div>
@@ -145,12 +198,18 @@ function payload() {
           <h2>Ringkasan KPI</h2>
           <p class="hint">Dari realisasi yang diinput</p>
         </div>
-        <div v-for="r in view.kpi.rows ?? []" :key="r.indicator.id" class="flex justify-between gap-3 border-b border-dashed border-line py-2 text-[13.5px] last:border-b-0">
+        <div
+          v-for="r in view.kpi.rows ?? []"
+          :key="r.indicator.id"
+          class="flex justify-between gap-3 border-b border-dashed border-line py-2 text-[13.5px] last:border-b-0"
+        >
           <span>{{ r.indicator.name }}</span>
           <b class="text-right">
             {{ r.status === 'missing' ? '—' : fmtScore(r.achievement) }}
             <span v-if="r.status !== 'validated'" class="badge ml-1" :class="RESULT_STATUS[r.status]?.cls">
-              {{ r.status === 'missing' ? 'belum diisi' : r.status === 'rejected' ? 'ditolak' : 'belum valid' }}
+              {{
+                r.status === 'missing' ? 'belum diisi' : r.status === 'rejected' ? 'ditolak' : 'belum valid'
+              }}
             </span>
           </b>
         </div>
@@ -172,8 +231,16 @@ function payload() {
           </div>
         </template>
         <div class="mt-2.5 flex items-baseline justify-between gap-3 border-t border-line pt-3.5">
-          <b class="text-[40px] tracking-tight" data-testid="final-score">{{ showScore && final != null ? fmtScore(final) : '—' }}</b>
-          <span v-if="showScore && grade" class="badge !px-3.5 !py-1.5 !text-sm" :class="gradeClass(grade)" data-testid="grade">{{ grade }}</span>
+          <b class="text-[40px] tracking-tight" data-testid="final-score">{{
+            showScore && final != null ? fmtScore(final) : '—'
+          }}</b>
+          <span
+            v-if="showScore && grade"
+            class="badge !px-3.5 !py-1.5 !text-sm"
+            :class="gradeClass(grade)"
+            data-testid="grade"
+            >{{ grade }}</span
+          >
         </div>
         <p v-if="!showScore" class="hint mt-2">Skor akhir dan predikat tampil setelah penilaian final.</p>
 
@@ -187,14 +254,34 @@ function payload() {
           >
             {{ mode === 'manager' ? 'Kirim penilaian' : 'Kirim self-assessment' }}
           </button>
-          <button type="button" class="btn" :disabled="busy" data-testid="draft" @click="emit('save', payload(), false)">Simpan draf</button>
-          <p v-if="!complete" class="hint m-0" data-testid="incomplete">Nilai semua aspek ({{ answered }}/{{ aspects.length }}) untuk mengirim.</p>
+          <button
+            type="button"
+            class="btn"
+            :disabled="busy"
+            data-testid="draft"
+            @click="emit('save', payload(), false)"
+          >
+            Simpan draf
+          </button>
+          <p v-if="!complete" class="hint m-0" data-testid="incomplete">
+            Nilai semua aspek ({{ answered }}/{{ aspects.length }}) untuk mengirim.
+          </p>
         </div>
         <div v-if="view.can_finalize" class="mt-3.5">
-          <button type="button" class="btn pri w-full" :disabled="busy" data-testid="finalize" @click="emit('finalize')">Finalisasi hasil</button>
+          <button
+            type="button"
+            class="btn pri w-full"
+            :disabled="busy"
+            data-testid="finalize"
+            @click="emit('finalize')"
+          >
+            Finalisasi hasil
+          </button>
           <p class="hint mt-2">Final mengunci penilaian. Semua realisasi KPI harus sudah tervalidasi.</p>
         </div>
-        <p v-else-if="mode === 'manager'" class="hint mt-2.5">Setelah dikirim, HR atau Direktur yang memfinalisasi.</p>
+        <p v-else-if="mode === 'manager'" class="hint mt-2.5">
+          Setelah dikirim, HR atau Direktur yang memfinalisasi.
+        </p>
       </section>
     </div>
   </div>

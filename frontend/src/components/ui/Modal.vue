@@ -59,7 +59,10 @@ onBeforeUnmount(() => {
           </button>
         </header>
         <div class="overflow-y-auto px-5 py-4"><slot /></div>
-        <footer v-if="$slots.footer" class="flex flex-wrap justify-end gap-2.5 border-t border-line px-5 py-3.5">
+        <footer
+          v-if="$slots.footer"
+          class="flex flex-wrap justify-end gap-2.5 border-t border-line px-5 py-3.5"
+        >
           <slot name="footer" />
         </footer>
       </div>

@@ -20,7 +20,13 @@ describe('AppraisalForm (H-07) — mode atasan', () => {
     expect(w.get('[data-testid="final-score"]').text()).toBe('—')
     expect(w.get('[data-testid="submit"]').attributes('disabled')).toBeDefined()
 
-    for (const [id, n] of [[1, 4], [2, 5], [3, 4], [4, 4], [5, 5]] as const) {
+    for (const [id, n] of [
+      [1, 4],
+      [2, 5],
+      [3, 4],
+      [4, 4],
+      [5, 5],
+    ] as const) {
       await scale(w, id, n).trigger('click')
     }
     expect(w.get('[data-testid="behavior-part"]').text()).toBe('26,4') // 88,0 × 30%
@@ -49,7 +55,14 @@ describe('AppraisalForm (H-07) — mode atasan', () => {
 
   it('kirim: emit payload lengkap dengan submit=true; draf: submit=false', async () => {
     const w = mount(AppraisalForm, { props: { view: makeView() } })
-    for (const [id, n] of [[1, 4], [2, 5], [3, 4], [4, 4], [5, 5]] as const) await scale(w, id, n).trigger('click')
+    for (const [id, n] of [
+      [1, 4],
+      [2, 5],
+      [3, 4],
+      [4, 4],
+      [5, 5],
+    ] as const)
+      await scale(w, id, n).trigger('click')
     await w.get('[data-testid="manager-comment"]').setValue('Respons cepat')
     await w.get('[data-testid="development-plan"]').setValue('Sertifikasi DBA')
 
@@ -57,7 +70,10 @@ describe('AppraisalForm (H-07) — mode atasan', () => {
     await w.get('[data-testid="draft"]').trigger('click')
     const ev = w.emitted('save')!
     expect(ev).toHaveLength(2)
-    const [payload, submit] = ev[0] as [{ scores: Record<number, number>; managerComment: string; developmentPlan: string }, boolean]
+    const [payload, submit] = ev[0] as [
+      { scores: Record<number, number>; managerComment: string; developmentPlan: string },
+      boolean,
+    ]
     expect(payload.scores).toEqual({ 1: 4, 2: 5, 3: 4, 4: 4, 5: 5 })
     expect(payload.managerComment).toBe('Respons cepat')
     expect(payload.developmentPlan).toBe('Sertifikasi DBA')
@@ -82,7 +98,9 @@ describe('AppraisalForm (H-07) — mode atasan', () => {
   it('tombol finalisasi hanya muncul bila can_finalize', async () => {
     const without = mount(AppraisalForm, { props: { view: makeView() } })
     expect(without.find('[data-testid="finalize"]').exists()).toBe(false)
-    const w = mount(AppraisalForm, { props: { view: makeView({ can_finalize: true, status: 'manager_done' }, [4, 5, 4, 4, 5]) } })
+    const w = mount(AppraisalForm, {
+      props: { view: makeView({ can_finalize: true, status: 'manager_done' }, [4, 5, 4, 4, 5]) },
+    })
     await w.get('[data-testid="finalize"]').trigger('click')
     expect(w.emitted('finalize')).toHaveLength(1)
   })
@@ -90,7 +108,10 @@ describe('AppraisalForm (H-07) — mode atasan', () => {
 
 describe('AppraisalForm — mode karyawan (self-assessment)', () => {
   const selfView = () =>
-    makeView({ can_manager: false, can_self: true, status: 'draft', hidden_from_employee: true, kpi_score: '95.65' }, [null, null, null, null, null])
+    makeView(
+      { can_manager: false, can_self: true, status: 'draft', hidden_from_employee: true, kpi_score: '95.65' },
+      [null, null, null, null, null],
+    )
 
   it('mengisi nilai sendiri; nilai atasan & skor akhir disembunyikan', () => {
     const w = mount(AppraisalForm, { props: { view: selfView() } })
@@ -109,7 +130,10 @@ describe('AppraisalForm — mode karyawan (self-assessment)', () => {
     for (const a of aspects) await scale(w, a.id, 4).trigger('click')
     await w.get('[data-testid="self-comment"]').setValue('Target tercapai')
     await w.get('[data-testid="submit"]').trigger('click')
-    const [payload, submit] = w.emitted('save')![0] as [{ scores: Record<number, number>; comment: string }, boolean]
+    const [payload, submit] = w.emitted('save')![0] as [
+      { scores: Record<number, number>; comment: string },
+      boolean,
+    ]
     expect(payload.scores).toEqual({ 1: 4, 2: 4, 3: 4, 4: 4, 5: 4 })
     expect(payload.comment).toBe('Target tercapai')
     expect(submit).toBe(true)
@@ -122,7 +146,16 @@ describe('AppraisalForm — hanya baca', () => {
     const w = mount(AppraisalForm, {
       props: {
         view: makeView(
-          { can_manager: false, can_self: false, status: 'final', final_score: '93.36', behavior_score: '88', grade: 'Istimewa', manager_comment: 'Bagus', development_plan: 'Sertifikasi' },
+          {
+            can_manager: false,
+            can_self: false,
+            status: 'final',
+            final_score: '93.36',
+            behavior_score: '88',
+            grade: 'Istimewa',
+            manager_comment: 'Bagus',
+            development_plan: 'Sertifikasi',
+          },
           [4, 5, 4, 4, 5],
         ),
       },

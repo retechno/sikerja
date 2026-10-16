@@ -12,6 +12,10 @@
   a {
     @apply text-primary hover:text-primary-dark;
   }
+  /* wadah scroll tabel menjadi containing block agar elemen sr-only (absolute) ikut terpotong */
+  .overflow-x-auto {
+    position: relative;
+  }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-primary;
   }

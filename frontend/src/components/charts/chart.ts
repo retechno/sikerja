@@ -11,7 +11,17 @@ import {
   Tooltip,
 } from 'chart.js'
 
-Chart.register(ArcElement, BarElement, CategoryScale, Filler, Legend, LineElement, LinearScale, PointElement, Tooltip)
+Chart.register(
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Filler,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
+)
 Chart.defaults.font.family = '"Plus Jakarta Sans", system-ui, sans-serif'
 Chart.defaults.color = '#5B6662'
 

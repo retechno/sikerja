@@ -1,4 +1,13 @@
-import type { AppraisalView, Employee, Indicator, KpiResult, KpiRow, KpiSheet, Period, ResultStatus } from '@/api'
+import type {
+  AppraisalView,
+  Employee,
+  Indicator,
+  KpiResult,
+  KpiRow,
+  KpiSheet,
+  Period,
+  ResultStatus,
+} from '@/api'
 import { achievement } from '@/lib/scoring'
 
 export const period: Period = {
@@ -29,12 +38,60 @@ export const rina: Employee = {
 }
 
 // Lima indikator IT Support + realisasi dari mockup H-05 (instalasi 3 dari 4 = menunggu validasi).
-const defs: { name: string; unit: string; target: number; weight: number; dir: 'higher' | 'lower'; actual: number; status: ResultStatus }[] = [
-  { name: 'Tiket terselesaikan', unit: 'tiket', target: 120, weight: 25, dir: 'higher', actual: 104, status: 'validated' },
-  { name: 'Tiket selesai dalam SLA', unit: '%', target: 95, weight: 25, dir: 'higher', actual: 96.2, status: 'validated' },
-  { name: 'Waktu respons pertama', unit: 'menit', target: 15, weight: 15, dir: 'lower', actual: 12, status: 'validated' },
-  { name: 'Instalasi / training PMS di hotel klien', unit: 'kegiatan', target: 4, weight: 20, dir: 'higher', actual: 3, status: 'submitted' },
-  { name: 'Rating kepuasan klien', unit: 'dari 5', target: 4.5, weight: 15, dir: 'higher', actual: 4.7, status: 'validated' },
+const defs: {
+  name: string
+  unit: string
+  target: number
+  weight: number
+  dir: 'higher' | 'lower'
+  actual: number
+  status: ResultStatus
+}[] = [
+  {
+    name: 'Tiket terselesaikan',
+    unit: 'tiket',
+    target: 120,
+    weight: 25,
+    dir: 'higher',
+    actual: 104,
+    status: 'validated',
+  },
+  {
+    name: 'Tiket selesai dalam SLA',
+    unit: '%',
+    target: 95,
+    weight: 25,
+    dir: 'higher',
+    actual: 96.2,
+    status: 'validated',
+  },
+  {
+    name: 'Waktu respons pertama',
+    unit: 'menit',
+    target: 15,
+    weight: 15,
+    dir: 'lower',
+    actual: 12,
+    status: 'validated',
+  },
+  {
+    name: 'Instalasi / training PMS di hotel klien',
+    unit: 'kegiatan',
+    target: 4,
+    weight: 20,
+    dir: 'higher',
+    actual: 3,
+    status: 'submitted',
+  },
+  {
+    name: 'Rating kepuasan klien',
+    unit: 'dari 5',
+    target: 4.5,
+    weight: 15,
+    dir: 'higher',
+    actual: 4.7,
+    status: 'validated',
+  },
 ]
 
 export function makeRows(statusOverride: Partial<Record<number, ResultStatus>> = {}): KpiRow[] {
@@ -97,20 +154,29 @@ export function makeSheet(over: Partial<KpiSheet> = {}): KpiSheet {
   }
 }
 
-export const aspects = ['Disiplin', 'Kerja sama tim', 'Inisiatif', 'Komunikasi', 'Tanggung jawab'].map((name, i) => ({
-  id: i + 1,
-  name,
-  description: `Deskripsi ${name}`,
-}))
+export const aspects = ['Disiplin', 'Kerja sama tim', 'Inisiatif', 'Komunikasi', 'Tanggung jawab'].map(
+  (name, i) => ({
+    id: i + 1,
+    name,
+    description: `Deskripsi ${name}`,
+  }),
+)
 
-export function makeView(over: Partial<AppraisalView> = {}, manager: (number | null)[] = [null, null, null, null, null]): AppraisalView {
+export function makeView(
+  over: Partial<AppraisalView> = {},
+  manager: (number | null)[] = [null, null, null, null, null],
+): AppraisalView {
   const self = [5, 4, 4, 4, 5]
   return {
     appraisal_id: 1,
     status: 'self_done',
     employee: rina,
     period,
-    aspects: aspects.map((a, i) => ({ aspect: a, self_score: self[i] ?? null, manager_score: manager[i] ?? null })),
+    aspects: aspects.map((a, i) => ({
+      aspect: a,
+      self_score: self[i] ?? null,
+      manager_score: manager[i] ?? null,
+    })),
     employee_comment: 'Menangani migrasi data PMS lebih cepat dari jadwal.',
     manager_comment: '',
     development_plan: '',

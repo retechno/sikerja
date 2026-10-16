@@ -47,21 +47,35 @@ const editable = (r: KpiRow) => props.canInput && r.indicator.source === 'manual
           </tr>
         </thead>
         <tbody>
-          <tr v-for="r in rows" :key="r.indicator.id" :class="{ sel: selectedId === r.indicator.id }" :data-testid="`kpi-row-${r.indicator.id}`">
+          <tr
+            v-for="r in rows"
+            :key="r.indicator.id"
+            :class="{ sel: selectedId === r.indicator.id }"
+            :data-testid="`kpi-row-${r.indicator.id}`"
+          >
             <td>
               <b>{{ r.indicator.name }}</b>
               <div class="muted text-xs">{{ DIRECTION_LABEL[r.indicator.direction] }}</div>
             </td>
             <td class="num">{{ withUnit(r.indicator.target, r.indicator.unit) }}</td>
-            <td class="num" data-col="actual">{{ r.result ? withUnit(r.result.actual, r.indicator.unit, false) : '—' }}</td>
-            <td class="num" data-col="achievement">{{ r.status === 'missing' ? '—' : fmtScore(r.achievement) }}</td>
+            <td class="num" data-col="actual">
+              {{ r.result ? withUnit(r.result.actual, r.indicator.unit, false) : '—' }}
+            </td>
+            <td class="num" data-col="achievement">
+              {{ r.status === 'missing' ? '—' : fmtScore(r.achievement) }}
+            </td>
             <td class="num">{{ fmtNum(r.indicator.weight) }}%</td>
             <td class="num" data-col="points">
               <b>{{ r.status === 'missing' ? '—' : fmtScore(r.points) }}</b>
             </td>
             <td>
-              <span class="badge" :class="RESULT_STATUS[r.status]?.cls" data-col="status">{{ RESULT_STATUS[r.status]?.label }}</span>
-              <div v-if="r.status === 'rejected' && r.result?.validation_note" class="mt-1 max-w-[220px] text-xs text-bad-fg">
+              <span class="badge" :class="RESULT_STATUS[r.status]?.cls" data-col="status">{{
+                RESULT_STATUS[r.status]?.label
+              }}</span>
+              <div
+                v-if="r.status === 'rejected' && r.result?.validation_note"
+                class="mt-1 max-w-[220px] text-xs text-bad-fg"
+              >
                 {{ r.result.validation_note }}
               </div>
             </td>

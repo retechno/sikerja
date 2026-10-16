@@ -109,7 +109,10 @@ export async function get<T>(url: string, params?: Record<string, unknown>): Pro
   return (await http.get(url, { params })).data.data as T
 }
 
-export async function getWithMeta<T, M>(url: string, params?: Record<string, unknown>): Promise<{ data: T; meta: M }> {
+export async function getWithMeta<T, M>(
+  url: string,
+  params?: Record<string, unknown>,
+): Promise<{ data: T; meta: M }> {
   const r = (await http.get(url, { params })).data
   return { data: r.data as T, meta: r.meta as M }
 }
@@ -120,7 +123,11 @@ export async function send<T>(method: 'post' | 'put' | 'delete', url: string, bo
 }
 
 /** Unduh berkas (Excel/PDF) lewat blob supaya error JSON dari server tetap bisa ditampilkan. */
-export async function download(url: string, params: Record<string, unknown>, fallbackName: string): Promise<void> {
+export async function download(
+  url: string,
+  params: Record<string, unknown>,
+  fallbackName: string,
+): Promise<void> {
   let res
   try {
     res = await http.get(url, { params, responseType: 'blob' })
@@ -134,7 +141,8 @@ export async function download(url: string, params: Record<string, unknown>, fal
       } catch {
         parsed = null
       }
-      if (parsed?.error) throw new ApiError(err.status, parsed.error.code ?? 'error', parsed.error.message ?? err.message)
+      if (parsed?.error)
+        throw new ApiError(err.status, parsed.error.code ?? 'error', parsed.error.message ?? err.message)
     }
     throw err
   }

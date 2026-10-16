@@ -43,7 +43,11 @@ const groups = computed<NavGroup[]>(() => {
       label: auth.isDirector && !auth.isManager ? 'Manajer saya' : 'Tim saya',
       items: [
         ...(auth.isManager ? [{ to: '/dashboard/tim', label: 'Dashboard Tim', icon: 'home' }] : []),
-        { to: '/penilaian/tim', label: auth.isManager ? 'Penilaian Tim' : 'Penilaian Manajer', icon: 'clipboard' },
+        {
+          to: '/penilaian/tim',
+          label: auth.isManager ? 'Penilaian Tim' : 'Penilaian Manajer',
+          icon: 'clipboard',
+        },
       ],
     })
   }
@@ -114,18 +118,34 @@ const periodLabel = (p: { name: string; status: string }) =>
 <template>
   <div class="flex min-h-screen">
     <!-- Sidebar (desktop) / drawer (ponsel) -->
-    <div v-if="drawer" class="fixed inset-0 z-30 bg-black/40 lg:hidden" aria-hidden="true" @click="drawer = false" />
+    <div
+      v-if="drawer"
+      class="fixed inset-0 z-30 bg-black/40 lg:hidden"
+      aria-hidden="true"
+      @click="drawer = false"
+    />
     <aside
       class="fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col gap-6 overflow-y-auto bg-side p-4 pt-6 text-side-text transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
       :class="drawer ? 'translate-x-0' : '-translate-x-full'"
       aria-label="Menu utama"
     >
       <div class="flex items-center justify-between px-2">
-        <RouterLink to="/" class="flex items-center gap-2.5 text-[19px] font-extrabold text-white no-underline hover:text-white">
-          <span class="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-accent font-extrabold text-side">S</span>
+        <RouterLink
+          to="/"
+          class="flex items-center gap-2.5 text-[19px] font-extrabold text-white no-underline hover:text-white"
+        >
+          <span
+            class="flex h-[34px] w-[34px] items-center justify-center rounded-[10px] bg-accent font-extrabold text-side"
+            >S</span
+          >
           SiKerja
         </RouterLink>
-        <button class="rounded-lg p-2 text-side-text lg:hidden" type="button" aria-label="Tutup menu" @click="drawer = false">
+        <button
+          class="rounded-lg p-2 text-side-text lg:hidden"
+          type="button"
+          aria-label="Tutup menu"
+          @click="drawer = false"
+        >
           <Icon name="x" :size="20" />
         </button>
       </div>
@@ -152,7 +172,9 @@ const periodLabel = (p: { name: string; status: string }) =>
     </aside>
 
     <main class="flex min-w-0 flex-1 flex-col">
-      <header class="flex flex-wrap items-center gap-3 border-b border-line bg-white px-4 py-3 sm:px-8 sm:py-[18px]">
+      <header
+        class="flex flex-wrap items-center gap-3 border-b border-line bg-white px-4 py-3 sm:px-8 sm:py-[18px]"
+      >
         <button
           class="grid h-11 w-11 place-items-center rounded-xl border border-line bg-white lg:hidden"
           type="button"
@@ -161,12 +183,23 @@ const periodLabel = (p: { name: string; status: string }) =>
         >
           <Icon name="menu" :size="20" />
         </button>
-        <h1 class="m-0 min-w-0 flex-1 truncate text-lg font-bold tracking-tight sm:text-[22px]">{{ route.meta.title }}</h1>
+        <h1 class="m-0 min-w-0 flex-1 truncate text-lg font-bold tracking-tight sm:text-[22px]">
+          {{ route.meta.title }}
+        </h1>
 
         <label v-if="showPeriod" class="flex items-center gap-2 text-[13px] font-semibold">
           <span class="hidden sm:inline">Periode</span>
-          <select class="input !min-h-[44px] !w-auto" :value="periods.selectedId ?? ''" aria-label="Pilih periode" @change="onSelectPeriod">
-            <option v-for="p in periods.list.filter((x) => x.status !== 'draft' || auth.isHR)" :key="p.id" :value="p.id">
+          <select
+            class="input !min-h-[44px] !w-auto"
+            :value="periods.selectedId ?? ''"
+            aria-label="Pilih periode"
+            @change="onSelectPeriod"
+          >
+            <option
+              v-for="p in periods.list.filter((x) => x.status !== 'draft' || auth.isHR)"
+              :key="p.id"
+              :value="p.id"
+            >
               {{ periodLabel(p) }}
             </option>
           </select>
@@ -175,18 +208,33 @@ const periodLabel = (p: { name: string; status: string }) =>
         <NotificationBell />
 
         <div class="relative">
-          <button class="flex min-h-[44px] items-center gap-2.5 rounded-xl px-1 text-left" type="button" :aria-expanded="menu" @click="menu = !menu">
+          <button
+            class="flex min-h-[44px] items-center gap-2.5 rounded-xl px-1 text-left"
+            type="button"
+            :aria-expanded="menu"
+            @click="menu = !menu"
+          >
             <Avatar :employee="auth.user" />
             <span class="hidden leading-tight sm:block">
               <b class="block text-sm">{{ auth.user?.name }}</b>
               <span class="text-xs text-ink-soft">{{ auth.user?.position?.name ?? roleLine }}</span>
             </span>
           </button>
-          <div v-if="menu" class="absolute right-0 top-[52px] z-20 w-52 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg">
-            <RouterLink to="/profil" class="flex min-h-[44px] items-center gap-2.5 px-4 text-ink no-underline hover:bg-canvas hover:text-ink">
+          <div
+            v-if="menu"
+            class="absolute right-0 top-[52px] z-20 w-52 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-lg"
+          >
+            <RouterLink
+              to="/profil"
+              class="flex min-h-[44px] items-center gap-2.5 px-4 text-ink no-underline hover:bg-canvas hover:text-ink"
+            >
               <Icon name="user" />Profil &amp; password
             </RouterLink>
-            <button type="button" class="flex min-h-[44px] w-full items-center gap-2.5 px-4 text-left hover:bg-canvas" @click="logout">
+            <button
+              type="button"
+              class="flex min-h-[44px] w-full items-center gap-2.5 px-4 text-left hover:bg-canvas"
+              @click="logout"
+            >
               <Icon name="logout" />Keluar
             </button>
           </div>
