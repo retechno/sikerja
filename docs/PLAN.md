@@ -12,12 +12,12 @@ Centang `[x]` saat selesai. Urutan = urutan pengerjaan.
 - [x] 5. KpiScoreService + test (capaian, cap 120, higher/lower, realisasi 0, skor berbobot)
 - [x] 6. AppraisalService (skor perilaku, skor akhir, predikat) + test (89,99/90; contoh H-07 → 93,4 Istimewa)
 - [x] 7. Auth: login, refresh, logout, lupa/reset password, ganti password, rate limit Redis
-- [ ] 8. Middleware auth + RBAC + cek kepemilikan data (karyawan/manajer/HR/direktur)
-- [ ] 9. Audit log (`activity_log`)
+- [x] 8. Middleware auth + RBAC + cek kepemilikan data (karyawan/manajer/HR/direktur)
+- [x] 9. Audit log (`activity_log`)
 - [ ] 10. Master data: departemen, jabatan, karyawan, role, profil + foto, import/template Excel
-- [ ] 11. Periode (buat/buka/tutup/buka ulang) + template KPI (validasi 100%)
-- [ ] 12. Realisasi KPI: input, bukti (storage privat + unduh), validasi manajer, kunci periode
-- [ ] 13. Penilaian: self, atasan, finalisasi
+- [x] 11. Periode (buat/buka/tutup/buka ulang) + template KPI (validasi 100%)
+- [x] 12. Realisasi KPI: input, bukti (storage privat + unduh), validasi manajer, kunci periode
+- [x] 13. Penilaian: self, atasan, finalisasi
 - [ ] 14. Dashboard (karyawan/manajer/direktur) + cache Redis, tanpa N+1
 - [ ] 15. Laporan + export Excel & PDF
 - [ ] 16. Seeder `cmd/seed` (departemen, user, template, aspek, 6 periode + data acak)

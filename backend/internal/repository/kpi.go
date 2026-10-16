@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -236,7 +237,8 @@ type AppraisalRepo interface {
 	ForEmployees(periodID uint64, employeeIDs []uint64) ([]model.Appraisal, error)
 	Create(a *model.Appraisal) error
 	Save(a *model.Appraisal) error
-	UpsertScore(s *model.AppraisalScore) error
+	// UpsertScore menyimpan satu nilai; column = "self_score" atau "manager_score" (kolom lain tidak disentuh).
+	UpsertScore(s *model.AppraisalScore, column string) error
 	Count(periodID uint64, status string) (int64, error)
 }
 
@@ -271,10 +273,13 @@ func (r *appraisalRepo) ForEmployees(periodID uint64, ids []uint64) ([]model.App
 func (r *appraisalRepo) Create(a *model.Appraisal) error { return r.db.Omit("Scores").Create(a).Error }
 func (r *appraisalRepo) Save(a *model.Appraisal) error   { return r.db.Omit("Scores").Save(a).Error }
 
-func (r *appraisalRepo) UpsertScore(s *model.AppraisalScore) error {
+func (r *appraisalRepo) UpsertScore(s *model.AppraisalScore, column string) error {
+	if column != "self_score" && column != "manager_score" {
+		return errors.New("kolom nilai tidak valid")
+	}
 	return r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "appraisal_id"}, {Name: "aspect_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"self_score", "manager_score", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{column, "updated_at"}),
 	}).Create(s).Error
 }
 

@@ -35,9 +35,11 @@ Format: **keputusan** — alasan.
 
 - **Skor tidak dipotong di 100.** Capaian maks 120 sehingga skor KPI bisa >100; SPEC hanya
   menetapkan cap 120 per KPI, jadi skor akhir tidak dibatasi lagi. (Perlu dikonfirmasi pemilik produk.)
-- **Hanya realisasi berstatus `validated` yang masuk skor KPI.** Indikator tanpa realisasi
-  tervalidasi dihitung capaian 0 (termasuk arah "lebih rendah") dan ditandai "belum valid"
-  di UI (sesuai H-07). Realisasi 0 *yang diinput* pada arah lebih rendah = 120.
+- **Skor KPI di layar = skor sementara**: semua realisasi yang tidak ditolak dihitung (mockup H-05/H-07 menjumlahkan
+  juga indikator "menunggu validasi" dan menandainya "belum valid"). **Finalisasi baru boleh bila semua indikator
+  berstatus `validated`**, jadi skor yang dibekukan selalu berasal dari data tervalidasi. Indikator tanpa realisasi
+  (atau ditolak) = capaian 0, termasuk arah "lebih rendah" (bukan 120); realisasi 0 yang *diinput* pada arah
+  lebih rendah = 120.
 - **Realisasi yang diinput manajer langsung berstatus `validated`.** Realisasi karyawan
   berstatus `submitted`; mengubah realisasi yang sudah divalidasi mengembalikannya ke `submitted`.
 - **Manajer memvalidasi/menilai anggota yang `department_id`-nya sama dengan departemennya**
@@ -84,3 +86,19 @@ Format: **keputusan** — alasan.
 - **Tabel `activity_log` bernama tunggal** (sesuai SPEC) — GORM defaultnya jamak, dipaksa lewat `TableName()`.
 - **Test paritas model ↔ migrasi** (`internal/model/model_test.go`) membandingkan kolom GORM dengan `CREATE TABLE`
   di `000001_init.up.sql`; test ini sudah menangkap satu kesalahan nama tabel.
+
+## Tambahan (alur KPI & penilaian)
+
+- **Satu berkas bukti per realisasi** (kolom `evidence_path` tunggal di SPEC); mengunggah lagi menggantikan yang lama.
+  Mockup H-05 menampilkan beberapa berkas — ditunda. Jenis berkas ditentukan dari isi (sniffing), bukan ekstensi.
+  Mengganti bukti pada realisasi yang sudah divalidasi mengembalikannya ke `submitted`.
+- **Nilai atasan, komentar atasan, rencana pengembangan, skor perilaku, skor akhir, dan predikat disembunyikan dari
+  karyawan sampai penilaiannya `final`** (catatan di mockup H-07: "Terlihat oleh karyawan setelah penilaian final").
+- **Penilaian yang sudah `final` terkunci** (realisasi, validasi, nilai) walau periodenya masih aktif.
+- **Periode tertutup → HTTP 423 (Locked)**; periode draft → 400.
+- **Direktur menilai/memvalidasi Manajer** (atasan langsung = `manager_id`); Manajer tidak bisa menilai dirinya sendiri.
+  HR tidak memvalidasi KPI (hanya melihat dan memfinalisasi).
+- **HR dan Direktur tidak punya penilaian** (tanpa departemen/template); mereka tidak muncul di daftar tim.
+- **Token akses tidak membawa role**: Actor dimuat dari DB tiap request (3 query ringan) agar perubahan role,
+  departemen, atau penonaktifan langsung berlaku.
+- **Folder `dto/`** dari CLAUDE.md tidak dibuat; struct input/output didefinisikan di dekat service yang memakainya.

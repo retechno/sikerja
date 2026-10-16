@@ -20,9 +20,6 @@ var (
 	ErrPeriodWeights    = errors.New("bobot KPI + bobot perilaku periode harus 100")
 )
 
-// AppraisalService: rumus penilaian (file ini) dan alur penilaian (appraisal.go).
-type AppraisalService struct{}
-
 var gradeBands = []struct {
 	min   decimal.Decimal
 	grade string
