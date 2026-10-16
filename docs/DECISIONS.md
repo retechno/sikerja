@@ -70,3 +70,17 @@ Format: **keputusan** — alasan.
 - **Dashboard manajer**: kotak "persetujuan menunggu" ditunda ke Rilis 2.
 - **Data demo**: email `nama.depan@sikerja.test`, password `password` untuk semua akun (lihat README).
 - **Cache dashboard Redis 5 menit** per (role, scope, periode); dibuang saat ada perubahan realisasi/penilaian/periode.
+
+## Tambahan (lapisan data & skor)
+
+- **`employees.department_id` dan `positions.department_id` boleh NULL** — Direktur dan HR tidak
+  termasuk dalam 4 departemen di SPEC; daripada menambah departemen kelima, keduanya tanpa departemen
+  (jabatan "Direktur"/"Staf HR" lintas departemen). Mereka tidak punya template KPI maupun penilaian.
+- **Pembulatan bertahap 2 desimal**: capaian per KPI, skor KPI, skor perilaku, dan skor akhir masing-masing
+  dibulatkan half-up ke 2 desimal (itu nilai yang disimpan di DB), tampil 1 desimal. Dengan data mockup H-05
+  skor KPI = 95,65 → tampil 95,7 persis seperti mockup; tanpa pembulatan antara hasilnya 95,649 → 95,6.
+- **Repository + `Store.Tx`**: service menerima `repository.Store` dan memakai `store.R()` untuk query biasa atau
+  `store.Tx(func(Repos) error)` untuk transaksi. Fungsi repository belum menerima `context.Context`.
+- **Tabel `activity_log` bernama tunggal** (sesuai SPEC) — GORM defaultnya jamak, dipaksa lewat `TableName()`.
+- **Test paritas model ↔ migrasi** (`internal/model/model_test.go`) membandingkan kolom GORM dengan `CREATE TABLE`
+  di `000001_init.up.sql`; test ini sudah menangkap satu kesalahan nama tabel.

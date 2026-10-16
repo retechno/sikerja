@@ -6,7 +6,7 @@ Centang `[x]` saat selesai. Urutan = urutan pengerjaan.
 - [x] 1. PLAN.md + DECISIONS.md
 - [ ] 2. Monorepo: `backend/`, `frontend/`, `docker-compose.yml`, `Makefile`, `.env.example`, README
 - [ ] 3. Backend: config, DB, Redis, logger, router, format respons/error
-- [ ] 4. Migrasi SQL + model semua tabel kecuali `leave_*` dan `holidays`
+- [x] 4. Migrasi SQL + model semua tabel kecuali `leave_*` dan `holidays`
 
 ## B. Backend inti
 - [x] 5. KpiScoreService + test (capaian, cap 120, higher/lower, realisasi 0, skor berbobot)
