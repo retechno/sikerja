@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -12,12 +13,31 @@ import (
 )
 
 type PeriodService struct {
-	store repository.Store
-	cache *Cache
+	store    repository.Store
+	cache    *Cache
+	notifier Notifier
 }
 
 func NewPeriodService(store repository.Store, cache *Cache) *PeriodService {
-	return &PeriodService{store: store, cache: cache}
+	return &PeriodService{store: store, cache: cache, notifier: NoopNotifier{}}
+}
+
+// SetNotifier mengaktifkan notifikasi "periode dibuka".
+func (s *PeriodService) SetNotifier(n Notifier) { s.notifier = n }
+
+// notifyOpened memberi tahu semua karyawan aktif bahwa periode dibuka.
+func (s *PeriodService) notifyOpened(p *model.AppraisalPeriod) {
+	emps, err := s.store.R().Employees.AllActive()
+	if err != nil {
+		return
+	}
+	s.notifier.Notify(bgCtx(), Notice{
+		Type:    EvPeriodOpened,
+		Title:   "Periode penilaian " + p.Name + " dibuka",
+		Message: fmt.Sprintf("Periode penilaian %s sudah dibuka (sampai %s). Silakan isi realisasi KPI dan self-assessment Anda.", p.Name, fmtDate(DateOnly(p.EndDate))),
+		Link:    "/kpi",
+		Data:    map[string]any{"period_id": p.ID},
+	}, emps...)
 }
 
 type PeriodInput struct {
@@ -186,7 +206,11 @@ func (s *PeriodService) transition(a Actor, id uint64, from []string, to, action
 
 // Open: Draft → Aktif.
 func (s *PeriodService) Open(a Actor, id uint64) (*model.AppraisalPeriod, error) {
-	return s.transition(a, id, []string{model.PeriodDraft}, model.PeriodActive, AuditPeriodOpen)
+	p, err := s.transition(a, id, []string{model.PeriodDraft}, model.PeriodActive, AuditPeriodOpen)
+	if err == nil {
+		s.notifyOpened(p)
+	}
+	return p, err
 }
 
 // Close: Aktif → Ditutup (data terkunci).

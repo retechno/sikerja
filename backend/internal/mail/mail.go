@@ -12,7 +12,17 @@ import (
 	"github.com/retechno/sikerja/backend/internal/config"
 )
 
-const TaskPasswordReset = "email:password_reset"
+const (
+	TaskPasswordReset = "email:password_reset"
+	TaskNotice        = "email:notice"
+)
+
+type noticePayload struct {
+	To      string `json:"to"`
+	Name    string `json:"name"`
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
 
 type passwordResetPayload struct {
 	To   string `json:"to"`
@@ -26,6 +36,16 @@ type SMTPMailer struct{ cfg config.Config }
 func NewSMTPMailer(cfg config.Config) *SMTPMailer { return &SMTPMailer{cfg: cfg} }
 
 func (m *SMTPMailer) SendPasswordReset(to, name, link string) error {
+	body := "Halo " + name + ",\n\nKami menerima permintaan untuk mengatur ulang password akun SiKerja Anda.\n" +
+		"Buka tautan berikut (berlaku 1 jam, sekali pakai):\n\n" + link + "\n\n" +
+		"Jika Anda tidak memintanya, abaikan email ini.\n"
+	return m.send(to, "Atur ulang password SiKerja", body)
+}
+
+// SendNotice mengirim email notifikasi biasa.
+func (m *SMTPMailer) SendNotice(to, _, subject, body string) error { return m.send(to, subject, body) }
+
+func (m *SMTPMailer) send(to, subject, body string) error {
 	msg := gomail.NewMsg()
 	if err := msg.From(m.cfg.SMTPFrom); err != nil {
 		return fmt.Errorf("from: %w", err)
@@ -33,11 +53,8 @@ func (m *SMTPMailer) SendPasswordReset(to, name, link string) error {
 	if err := msg.To(to); err != nil {
 		return fmt.Errorf("to: %w", err)
 	}
-	msg.Subject("Atur ulang password SiKerja")
-	msg.SetBodyString(gomail.TypeTextPlain, fmt.Sprintf(
-		"Halo %s,\n\nKami menerima permintaan untuk mengatur ulang password akun SiKerja Anda.\n"+
-			"Buka tautan berikut (berlaku 1 jam, sekali pakai):\n\n%s\n\n"+
-			"Jika Anda tidak memintanya, abaikan email ini.\n", name, link))
+	msg.Subject(subject)
+	msg.SetBodyString(gomail.TypeTextPlain, body)
 
 	opts := []gomail.Option{gomail.WithPort(m.cfg.SMTPPort), gomail.WithTLSPolicy(gomail.NoTLS)}
 	if m.cfg.SMTPUser != "" {
@@ -68,6 +85,13 @@ func (q *QueueMailer) SendPasswordReset(to, name, link string) error {
 	return err
 }
 
+// SendNotice memasukkan email notifikasi ke antrian.
+func (q *QueueMailer) SendNotice(to, name, subject, body string) error {
+	b, _ := json.Marshal(noticePayload{To: to, Name: name, Subject: subject, Body: body})
+	_, err := q.client.Enqueue(asynq.NewTask(TaskNotice, b), asynq.MaxRetry(5), asynq.Queue("default"))
+	return err
+}
+
 // Handler mendaftarkan handler tugas email untuk worker.
 func Handler(m *SMTPMailer) *asynq.ServeMux {
 	mux := asynq.NewServeMux()
@@ -77,6 +101,13 @@ func Handler(m *SMTPMailer) *asynq.ServeMux {
 			return fmt.Errorf("payload: %w: %w", err, asynq.SkipRetry)
 		}
 		return m.SendPasswordReset(p.To, p.Name, p.Link)
+	})
+	mux.HandleFunc(TaskNotice, func(_ context.Context, t *asynq.Task) error {
+		var p noticePayload
+		if err := json.Unmarshal(t.Payload(), &p); err != nil {
+			return fmt.Errorf("payload: %w: %w", err, asynq.SkipRetry)
+		}
+		return m.SendNotice(p.To, p.Name, p.Subject, p.Body)
 	})
 	return mux
 }
