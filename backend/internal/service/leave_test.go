@@ -1051,3 +1051,33 @@ func TestDeadlineReminders(t *testing.T) {
 }
 
 func apperrOf(err error) (*apperr.Error, bool) { return apperr.As(err) }
+
+func TestSubstitutesAndLastStageFlag(t *testing.T) {
+	e := newLeaveEnv(t)
+	subs, err := e.svc.Substitutes(e.w.Actor(e.w.EmpIT1))
+	require.NoError(t, err)
+	names := []string{}
+	for _, s := range subs {
+		names = append(names, s.Name)
+	}
+	assert.ElementsMatch(t, []string{e.w.EmpIT2.Name, e.w.MgrIT.Name}, names, "rekan satu departemen, tanpa diri sendiri dan departemen lain")
+	none, err := e.svc.Substitutes(e.w.Actor(e.w.HR))
+	require.NoError(t, err)
+	assert.Empty(t, none, "HR tanpa departemen tidak punya calon pengganti")
+
+	v := e.submit(t, e.w.EmpIT1, e.input(e.ct, "2026-11-02", "2026-11-03"))
+	got, err := e.svc.Get(e.w.Actor(e.w.MgrIT), v.ID)
+	require.NoError(t, err)
+	assert.False(t, got.IsLastStage, "tahap 1 dari 2")
+	e.approve(t, e.w.MgrIT, v.ID)
+	got, err = e.svc.Get(e.w.Actor(e.w.HR), v.ID)
+	require.NoError(t, err)
+	assert.True(t, got.IsLastStage, "tahap HR menyelesaikan pengajuan")
+
+	half := e.input(e.iz, "2026-11-04", "2026-11-04")
+	half.HalfDay = true
+	h := e.submit(t, e.w.EmpIT1, half)
+	hv, err := e.svc.Get(e.w.Actor(e.w.MgrIT), h.ID)
+	require.NoError(t, err)
+	assert.True(t, hv.IsLastStage, "setengah hari: persetujuan atasan sudah final")
+}

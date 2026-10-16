@@ -3,7 +3,7 @@
 Aplikasi internal untuk mengukur kinerja karyawan (KPI & penilaian) serta mengajukan izin dan cuti,
 untuk tim IT Support, Customer Service, Sales & Marketing, dan Developer.
 
-**Status:** Rilis 1 (KPI & penilaian) selesai. Rilis 2 (izin & cuti) dan Rilis 3 belum dikerjakan —
+**Status:** Rilis 1 (KPI & penilaian) dan Rilis 2 (izin & cuti, notifikasi) selesai; Rilis 3 belum dikerjakan —
 lihat [docs/PLAN.md](docs/PLAN.md) untuk rincian yang selesai/belum.
 
 | Dokumen | Isi |
