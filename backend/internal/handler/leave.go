@@ -219,6 +219,15 @@ func (h *H) leavePreview(c *gin.Context) {
 	ok(c, v)
 }
 
+func (h *H) leaveSubstitutes(c *gin.Context) {
+	v, err := h.Leaves.Substitutes(actor(c))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	ok(c, v)
+}
+
 func (h *H) leaveSummary(c *gin.Context) {
 	v, err := h.Leaves.Summary(actor(c))
 	if err != nil {

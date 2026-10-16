@@ -57,6 +57,7 @@ func NewRouter(d Deps) *gin.Engine {
 	in.GET("/leave/balances", h.leaveBalances)
 	in.GET("/leave/preview", h.leavePreview)
 	in.GET("/leave/summary", h.leaveSummary)
+	in.GET("/leave/substitutes", h.leaveSubstitutes)
 	in.GET("/leave/calendar", h.leaveCalendar)
 	in.GET("/leave/requests", h.listLeaves)
 	in.POST("/leave/requests", upload, h.submitLeave)

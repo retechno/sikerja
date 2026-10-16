@@ -3,23 +3,26 @@ import { computed, ref } from 'vue'
 import PageState from '@/components/ui/PageState.vue'
 import Modal from '@/components/ui/Modal.vue'
 import Icon from '@/components/ui/Icon.vue'
+import LeaveTypesTab from './LeaveTypesTab.vue'
+import HolidaysTab from './HolidaysTab.vue'
+import NotificationsTab from './NotificationsTab.vue'
 import { ApiError, employees, master, type Department, type Employee, type Position } from '@/api'
 import { useLoader } from '@/lib/useLoader'
 import { useToastStore } from '@/stores/toast'
 import { useAuthStore } from '@/stores/auth'
 
-// H-16 — Pengaturan (Rilis 1): departemen & jabatan. Jenis cuti, hari libur, dan notifikasi menyusul di Rilis 2.
+// H-16 — Pengaturan: departemen & jabatan, aspek perilaku, jenis cuti, hari libur, dan notifikasi.
 const toast = useToastStore()
 const auth = useAuthStore()
 
 type Tab = 'org' | 'aspects' | 'leave' | 'holidays' | 'notif'
 const tab = ref<Tab>('org')
-const TABS: { id: Tab; label: string; later?: boolean }[] = [
+const TABS: { id: Tab; label: string }[] = [
   { id: 'org', label: 'Departemen & jabatan' },
   { id: 'aspects', label: 'Aspek perilaku' },
-  { id: 'leave', label: 'Jenis cuti', later: true },
-  { id: 'holidays', label: 'Hari libur', later: true },
-  { id: 'notif', label: 'Notifikasi', later: true },
+  { id: 'leave', label: 'Jenis cuti' },
+  { id: 'holidays', label: 'Hari libur' },
+  { id: 'notif', label: 'Notifikasi' },
 ]
 
 const { data, loading, error, reload } = useLoader(async () => {
@@ -135,20 +138,13 @@ async function confirmRemove() {
       :class="{ pri: tab === t.id }"
       @click="tab = t.id"
     >
-      {{ t.label }}<span v-if="t.later" class="badge b-mute !px-1.5 !py-0 !text-[10px]">Rilis 2</span>
+      {{ t.label }}
     </button>
   </div>
 
-  <div
-    v-if="tab === 'leave' || tab === 'holidays' || tab === 'notif'"
-    class="card text-center"
-    data-testid="later"
-  >
-    <h2>Tersedia di Rilis 2</h2>
-    <p class="muted mb-0">
-      Pengaturan jenis & kuota cuti, hari libur, dan notifikasi dikerjakan bersama modul Izin &amp; Cuti.
-    </p>
-  </div>
+  <LeaveTypesTab v-if="tab === 'leave'" />
+  <HolidaysTab v-else-if="tab === 'holidays'" />
+  <NotificationsTab v-else-if="tab === 'notif'" />
 
   <PageState v-else :loading="loading && !data" :error="error" @retry="reload">
     <template v-if="data && tab === 'org'">

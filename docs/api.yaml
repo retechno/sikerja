@@ -549,6 +549,11 @@ paths:
       tags: [Izin & Cuti]
       summary: Ringkasan dasbor - saldo, 3 pengajuan terakhir, dan antrean persetujuan milik pengguna
       responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeaveSummary" } } } } } } }
+  /leave/substitutes:
+    get:
+      tags: [Izin & Cuti]
+      summary: Calon karyawan pengganti - rekan aktif satu departemen (kecuali diri sendiri)
+      responses: { "200": { description: "OK; data = [{id, name, position}]" } }
   /leave/calendar:
     get:
       tags: [Izin & Cuti]
@@ -954,6 +959,7 @@ components:
         can_cancel: { type: boolean }
         cancel_until: { type: string, format: date, description: "hari terakhir boleh membatalkan" }
         can_act: { type: boolean, description: "pengguna berhak menyetujui/menolak pada tahap ini" }
+        is_last_stage: { type: boolean, description: "persetujuan pada tahap ini menyelesaikan pengajuan (saldo dipotong)" }
         timeline: { type: array, items: { type: object, properties: { title: { type: string }, actor: { type: string }, note: { type: string }, at: { type: string, format: date-time, nullable: true }, state: { type: string, enum: [done, current, todo, rejected, cancelled] } } } }
         skipped: { type: array, items: { $ref: "#/components/schemas/DayInfo" }, description: "tanggal dalam rentang yang tidak dihitung" }
         balance: { type: object, nullable: true }

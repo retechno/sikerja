@@ -3,9 +3,11 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import PageState from '@/components/ui/PageState.vue'
 import BarChart from '@/components/charts/BarChart.vue'
-import { dashboard } from '@/api'
+import BalanceList from '@/components/leave/BalanceList.vue'
+import { dashboard, leave } from '@/api'
 import { useLoader } from '@/lib/useLoader'
 import { fmtLongDate, fmtNum, fmtScore, gradeClass, APPRAISAL_STATUS } from '@/lib/format'
+import { fmtDays, LEAVE_STATUS, leaveRangeText, leaveTitle } from '@/lib/leave'
 import { useAuthStore } from '@/stores/auth'
 import { usePeriodStore } from '@/stores/period'
 
@@ -16,6 +18,12 @@ const { data, loading, error, reload } = useLoader(async () => {
   await period.load()
   return dashboard.employee(period.selectedId ?? undefined)
 }, [() => period.selectedId])
+
+// saldo cuti & pengajuan terakhir (dimuat terpisah agar kegagalannya tidak menutup dasbor KPI)
+const leaveSummary = useLoader(() => leave.summary())
+const annual = computed(() =>
+  leaveSummary.data.value?.balances.find((b) => b.tracked && b.leave_type.code === 'CT'),
+)
 
 const firstName = computed(() => auth.user?.name.split(' ')[0] ?? '')
 const rows = computed(() => data.value?.sheet.rows ?? [])
@@ -175,6 +183,51 @@ function unitText(v: string, unit: string): string {
             :highlight="history.findIndex((h) => h.current)"
             description="Skor akhir enam periode terakhir"
           />
+        </section>
+      </div>
+
+      <div
+        v-if="leaveSummary.data.value"
+        class="flex flex-wrap items-start gap-6"
+        data-testid="leave-section"
+      >
+        <section class="card min-w-0 flex-[1_1_340px]" data-testid="leave-balance">
+          <div class="mb-3 flex items-start gap-3">
+            <div class="flex-1">
+              <h2>Saldo cuti {{ leaveSummary.data.value.year }}</h2>
+              <p class="hint">
+                <template v-if="annual">Sisa cuti tahunan {{ fmtDays(annual.available) }} hari</template>
+                <template v-else>Kuota per jenis izin &amp; cuti</template>
+              </p>
+            </div>
+            <RouterLink to="/izin-cuti/ajukan" class="btn sm pri">Ajukan</RouterLink>
+          </div>
+          <BalanceList :balances="leaveSummary.data.value.balances" />
+        </section>
+
+        <section class="card min-w-0 flex-[1_1_340px]" data-testid="leave-recent">
+          <div class="mb-3 flex items-start gap-3">
+            <div class="flex-1">
+              <h2>Pengajuan terakhir</h2>
+              <p class="hint">Izin &amp; cuti Anda</p>
+            </div>
+            <RouterLink to="/izin-cuti/riwayat" class="btn sm">Semua riwayat</RouterLink>
+          </div>
+          <p v-if="!leaveSummary.data.value.recent.length" class="muted m-0">Belum ada pengajuan.</p>
+          <RouterLink
+            v-for="l in leaveSummary.data.value.recent"
+            :key="l.id"
+            :to="{ path: '/izin-cuti/riwayat', query: { id: String(l.id) } }"
+            class="flex items-center gap-3 border-b border-line-soft py-2.5 text-ink no-underline last:border-b-0 hover:text-ink"
+          >
+            <span class="min-w-0 flex-1">
+              <b class="block truncate">{{ leaveTitle(l) }}</b>
+              <span class="muted block truncate text-xs"
+                >{{ leaveRangeText(l) }} · {{ fmtDays(l.days) }} hari</span
+              >
+            </span>
+            <span class="badge" :class="LEAVE_STATUS[l.status].cls">{{ LEAVE_STATUS[l.status].label }}</span>
+          </RouterLink>
         </section>
       </div>
     </template>

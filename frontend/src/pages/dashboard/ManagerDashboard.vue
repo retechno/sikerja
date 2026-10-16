@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import PageState from '@/components/ui/PageState.vue'
 import Avatar from '@/components/ui/Avatar.vue'
-import { dashboard } from '@/api'
+import PendingApprovals from '@/components/leave/PendingApprovals.vue'
+import { dashboard, leave } from '@/api'
 import { useLoader } from '@/lib/useLoader'
 import { fmtNum, fmtScore, gradeClass } from '@/lib/format'
 import { usePeriodStore } from '@/stores/period'
@@ -16,6 +17,9 @@ const { data, loading, error, reload } = useLoader(async () => {
   await period.load()
   return dashboard.manager(period.selectedId ?? undefined)
 }, [() => period.selectedId])
+
+// pengajuan izin/cuti yang menunggu persetujuan (tidak di-cache; dimuat terpisah)
+const leaveSummary = useLoader(() => leave.summary())
 
 const delta = computed(() => (data.value?.prev_avg_delta != null ? Number(data.value.prev_avg_delta) : null))
 const heading = computed(() => (auth.isManager ? `Tim ${auth.user?.department?.name ?? ''}` : 'Manajer saya'))
@@ -50,6 +54,11 @@ const heading = computed(() => (auth.isManager ? `Tim ${auth.user?.department?.n
             dari {{ data.members_pending }} anggota · <RouterLink to="/penilaian/tim">validasi</RouterLink>
           </div>
         </div>
+        <div class="card" data-testid="leave-card">
+          <div class="k">Persetujuan izin &amp; cuti</div>
+          <div class="v">{{ leaveSummary.data.value?.pending_count ?? '—' }}</div>
+          <div class="d">menunggu keputusan · <RouterLink to="/persetujuan">buka antrean</RouterLink></div>
+        </div>
         <div class="card">
           <div class="k">Belum dinilai atasan</div>
           <div class="v">{{ data.not_appraised }}</div>
@@ -68,6 +77,12 @@ const heading = computed(() => (auth.isManager ? `Tim ${auth.user?.department?.n
           </div>
         </div>
       </div>
+
+      <PendingApprovals
+        v-if="leaveSummary.data.value && leaveSummary.data.value.pending_count > 0"
+        :items="leaveSummary.data.value.queue"
+        :total="leaveSummary.data.value.pending_count"
+      />
 
       <div class="flex flex-wrap items-start gap-6">
         <section class="card min-w-0 flex-[2_1_560px] !p-2 pb-1">

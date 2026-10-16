@@ -97,6 +97,7 @@ type LeaveView struct {
 	CanCancel   bool   `json:"can_cancel"`
 	CancelUntil string `json:"cancel_until,omitempty"`
 	CanAct      bool   `json:"can_act"`
+	IsLastStage bool   `json:"is_last_stage"` // persetujuan pada tahap ini menyelesaikan pengajuan
 	HasFile     bool   `json:"has_attachment"`
 
 	Timeline  []TimelineStep `json:"timeline,omitempty"`
@@ -119,6 +120,9 @@ func (s *LeaveService) baseView(a Actor, l *model.LeaveRequest) LeaveView {
 		v.CancelUntil = DateOnly(l.StartDate).AddDate(0, 0, -1).Format("2006-01-02")
 	}
 	v.CanAct = canActOn(a, l)
+	if _, idx, ok := currentStage(l); ok && l.Employee != nil {
+		v.IsLastStage = idx == len(stagesFor(l.Employee, l.HalfDay))-1
+	}
 	return v
 }
 
@@ -769,6 +773,41 @@ func (s *LeaveService) PendingCount(a Actor) (int, error) {
 		}
 	}
 	return n, nil
+}
+
+// Colleague adalah calon karyawan pengganti.
+type Colleague struct {
+	ID       uint64 `json:"id"`
+	Name     string `json:"name"`
+	Position string `json:"position,omitempty"`
+}
+
+// Substitutes: rekan aktif satu departemen (kecuali diri sendiri) yang dapat dipilih sebagai pengganti.
+func (s *LeaveService) Substitutes(a Actor) ([]Colleague, error) {
+	r := s.store.R()
+	e, err := loadEmployee(r, a.EmployeeID)
+	if err != nil {
+		return nil, err
+	}
+	out := []Colleague{}
+	if e.DepartmentID == nil {
+		return out, nil
+	}
+	team, err := r.Employees.ByDepartment(*e.DepartmentID, true)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range team {
+		if p.ID == e.ID {
+			continue
+		}
+		c := Colleague{ID: p.ID, Name: p.Name}
+		if p.Position != nil {
+			c.Position = p.Position.Name
+		}
+		out = append(out, c)
+	}
+	return out, nil
 }
 
 // FlowPreview: alur persetujuan untuk pengaju a (tampil di form).
