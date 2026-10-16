@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"io/fs"
 	"regexp"
 	"sort"
 	"strings"
@@ -19,8 +20,14 @@ var createTable = regexp.MustCompile(`(?s)CREATE TABLE (\w+) \((.*?)\n\) ENGINE`
 
 func migrationColumns(t *testing.T) map[string][]string {
 	t.Helper()
-	raw, err := migrations.FS.ReadFile("000001_init.up.sql")
+	files, err := fs.Glob(migrations.FS, "*.up.sql")
 	require.NoError(t, err)
+	var raw []byte
+	for _, f := range files {
+		b, err := migrations.FS.ReadFile(f)
+		require.NoError(t, err)
+		raw = append(raw, b...)
+	}
 	out := map[string][]string{}
 	for _, m := range createTable.FindAllStringSubmatch(string(raw), -1) {
 		var cols []string
@@ -59,11 +66,5 @@ func TestModelsMatchMigration(t *testing.T) {
 		if assert.True(t, ok, "tabel %s tidak ada di migrasi", s.Table) {
 			assert.Equal(t, want, cols, "kolom tabel %s", s.Table)
 		}
-	}
-}
-
-func TestNoLeaveOrHolidayTablesInRelease1(t *testing.T) {
-	for name := range migrationColumns(t) {
-		assert.False(t, strings.HasPrefix(name, "leave_") || name == "holidays", name)
 	}
 }

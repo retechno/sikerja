@@ -1,0 +1,8 @@
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS app_settings;
+DROP TABLE IF EXISTS holidays;
+DROP TABLE IF EXISTS leave_approvals;
+DROP TABLE IF EXISTS leave_requests;
+DROP TABLE IF EXISTS leave_balances;
+DROP TABLE IF EXISTS leave_types;
+SET FOREIGN_KEY_CHECKS = 1;
