@@ -131,13 +131,18 @@ func Run(db *gorm.DB, opt Options) (*Result, error) {
 		if err != nil {
 			return err
 		}
-		return seedPeriods(r, rng, opt.Now, emps, tpls, aspects, res)
+		if err := seedPeriods(r, rng, opt.Now, emps, tpls, aspects, res); err != nil {
+			return err
+		}
+		return seedLeave(r, opt.Now)
 	})
 	return res, err
 }
 
 func wipe(db *gorm.DB) error {
 	for _, q := range []string{
+		"DELETE FROM leave_approvals", "DELETE FROM leave_requests", "DELETE FROM leave_balances",
+		"DELETE FROM leave_types", "DELETE FROM holidays", "DELETE FROM app_settings",
 		"DELETE FROM activity_log", "DELETE FROM notifications", "DELETE FROM password_resets",
 		"DELETE FROM appraisal_scores", "DELETE FROM appraisals", "DELETE FROM kpi_results",
 		"DELETE FROM appraisal_periods", "DELETE FROM behavior_aspects", "DELETE FROM kpi_indicators",
