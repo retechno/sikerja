@@ -198,3 +198,12 @@ func (s *PeriodService) Close(a Actor, id uint64) (*model.AppraisalPeriod, error
 func (s *PeriodService) Reopen(a Actor, id uint64) (*model.AppraisalPeriod, error) {
 	return s.transition(a, id, []string{model.PeriodClosed}, model.PeriodActive, AuditPeriodReopen)
 }
+
+// Resolve mengembalikan id periode: id yang diminta, atau (0) periode aktif terbaru / terbaru yang bukan draft.
+func (s *PeriodService) Resolve(a Actor, id uint64) (uint64, error) {
+	p, err := resolvePeriod(s.store.R(), id)
+	if err != nil {
+		return 0, err
+	}
+	return p.ID, nil
+}

@@ -5,7 +5,7 @@ Centang `[x]` saat selesai. Urutan = urutan pengerjaan.
 ## A. Fondasi
 - [x] 1. PLAN.md + DECISIONS.md
 - [ ] 2. Monorepo: `backend/`, `frontend/`, `docker-compose.yml`, `Makefile`, `.env.example`, README
-- [ ] 3. Backend: config, DB, Redis, logger, router, format respons/error
+- [x] 3. Backend: config, DB, Redis, logger, router, format respons/error
 - [x] 4. Migrasi SQL + model semua tabel kecuali `leave_*` dan `holidays`
 
 ## B. Backend inti
@@ -22,7 +22,7 @@ Centang `[x]` saat selesai. Urutan = urutan pengerjaan.
 - [x] 15. Laporan + export Excel & PDF
 - [ ] 16. Seeder `cmd/seed` (departemen, user, template, aspek, 6 periode + data acak)
 - [ ] 17. `docs/api.yaml`
-- [ ] 18. Test otorisasi + periode tertutup
+- [x] 18. Test otorisasi + periode tertutup
 
 ## C. Frontend
 - [ ] 19. Scaffold Vue 3 + TS + Tailwind + router + Pinia + axios, layout (sidebar/header/drawer)
