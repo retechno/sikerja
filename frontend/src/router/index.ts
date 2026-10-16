@@ -82,6 +82,30 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: 'Form Penilaian', roles: ['manager', 'director', 'hr'], period: true },
       },
       {
+        path: 'izin-cuti/ajukan',
+        name: 'izin-ajukan',
+        component: () => import('@/pages/leave/LeaveRequestPage.vue'),
+        meta: { title: 'Ajukan Izin/Cuti' },
+      },
+      {
+        path: 'izin-cuti/riwayat',
+        name: 'izin-riwayat',
+        component: () => import('@/pages/leave/LeaveHistoryPage.vue'),
+        meta: { title: 'Riwayat Pengajuan' },
+      },
+      {
+        path: 'persetujuan',
+        name: 'persetujuan',
+        component: () => import('@/pages/leave/ApprovalsPage.vue'),
+        meta: { title: 'Persetujuan', roles: ['manager', 'hr', 'director'] },
+      },
+      {
+        path: 'kalender',
+        name: 'kalender',
+        component: () => import('@/pages/leave/CalendarPage.vue'),
+        meta: { title: 'Kalender Tim' },
+      },
+      {
         path: 'master/karyawan',
         name: 'karyawan',
         component: () => import('@/pages/master/EmployeesPage.vue'),
