@@ -56,7 +56,7 @@ func Migrate(dsn string) error {
 	if err != nil {
 		return err
 	}
-	defer sqlDB.Close()
+	defer func() { _ = sqlDB.Close() }()
 	drv, err := migmysql.WithInstance(sqlDB, &migmysql.Config{})
 	if err != nil {
 		return err

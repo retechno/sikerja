@@ -49,7 +49,7 @@ func main() {
 		log.Fatal().Err(err).Msg("storage")
 	}
 	mailer := mail.NewQueueMailer(cfg.RedisAddr, cfg.RedisPass)
-	defer mailer.Close()
+	defer func() { _ = mailer.Close() }()
 
 	router := handler.NewRouter(app.NewDeps(cfg, log, db, rdb, mailer, files))
 	srv := &http.Server{

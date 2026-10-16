@@ -100,7 +100,7 @@ func (s *EmployeeService) ImportEmployees(a Actor, r io.Reader) (*ImportResult, 
 	if err != nil {
 		return nil, apperr.Validation("Berkas bukan Excel (.xlsx) yang valid", map[string]string{"file": "Gunakan template dari tombol Unduh template"})
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	sheet := importSheet
 	if idx, _ := f.GetSheetIndex(sheet); idx < 0 {
 		sheet = f.GetSheetName(0)
@@ -330,7 +330,7 @@ func (s *EmployeeService) ImportTemplate(a Actor) ([]byte, error) {
 		return nil, err
 	}
 	f := excelize.NewFile()
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	idx, _ := f.NewSheet(importSheet)
 	_ = f.DeleteSheet("Sheet1")
 	f.SetActiveSheet(idx)

@@ -206,9 +206,7 @@ func seedPeople(r repository.Repos, depts map[string]*model.Department, res *Res
 		}
 		roles := []string{p.Role}
 		if p.Role == model.RoleManager {
-			roles = []string{model.RoleManager, model.RoleEmployee}
-		} else if p.Role == model.RoleEmployee {
-			roles = []string{model.RoleEmployee}
+			roles = []string{model.RoleManager, model.RoleEmployee} // manajer juga karyawan
 		}
 		if err := r.Users.SetRoles(u.ID, roles); err != nil {
 			return nil, err
@@ -224,12 +222,10 @@ func seedPeople(r repository.Repos, depts map[string]*model.Department, res *Res
 			deptName = dep.Name
 		}
 		x := &emp{E: e, P: p, Scored: p.Dept != ""}
-		switch {
-		case p.Role == model.RoleDirector:
+		switch p.Role {
+		case model.RoleDirector:
 			director = x
-		case p.Role == model.RoleHR:
-			x.Appr = director
-		case p.Role == model.RoleManager:
+		case model.RoleHR, model.RoleManager:
 			x.Appr = director
 		default:
 			x.Appr = byDept[p.Dept]

@@ -337,7 +337,7 @@ func (r *auditRepo) List(f AuditFilter) ([]model.ActivityLog, int64, error) {
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	off, lim := f.Page.norm()
+	off, lim := f.norm()
 	var out []model.ActivityLog
 	err := q.Order("id DESC").Offset(off).Limit(lim).Find(&out).Error
 	return out, total, err

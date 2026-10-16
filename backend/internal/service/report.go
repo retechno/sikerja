@@ -158,7 +158,7 @@ func (s *ReportService) ExportXLSX(a Actor, periodID, deptID uint64) ([]byte, st
 		return nil, "", err
 	}
 	f := excelize.NewFile()
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	const sh = "Laporan"
 	_ = f.SetSheetName("Sheet1", sh)
 	_ = f.SetCellValue(sh, "A1", "Laporan Kinerja — "+v.Period.Name)
@@ -241,7 +241,7 @@ func (s *ReportService) ExportPDF(a Actor, periodID, deptID uint64) ([]byte, str
 			props.Text{Size: 9, Color: &props.Color{Red: 91, Green: 102, Blue: 98}}),
 		row.New(4),
 	)
-	m.RegisterHeader(row.New(8).WithStyle(&props.Cell{BackgroundColor: teal}).Add(
+	if err := m.RegisterHeader(row.New(8).WithStyle(&props.Cell{BackgroundColor: teal}).Add(
 		cell(1, "No", fontstyle.Bold, align.Left, white),
 		cell(3, "Nama", fontstyle.Bold, align.Left, white),
 		cell(2, "Departemen", fontstyle.Bold, align.Left, white),
@@ -250,7 +250,9 @@ func (s *ReportService) ExportPDF(a Actor, periodID, deptID uint64) ([]byte, str
 		cell(1, "Akhir", fontstyle.Bold, align.Right, white),
 		cell(2, "Predikat", fontstyle.Bold, align.Left, white),
 		cell(1, "Status", fontstyle.Bold, align.Left, white),
-	))
+	)); err != nil {
+		return nil, "", err
+	}
 	for i, r := range v.Rows {
 		rw := row.New(7).Add(
 			cell(1, fmt.Sprint(i+1), fontstyle.Normal, align.Left, nil),

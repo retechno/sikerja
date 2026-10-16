@@ -79,7 +79,7 @@ func (h *H) uploadEvidence(c *gin.Context) {
 		h.fail(c, apperr.Validation("Berkas wajib diunggah", map[string]string{"file": "Pilih berkas PDF, JPG, atau PNG"}))
 		return
 	}
-	defer fh.Close()
+	defer func() { _ = fh.Close() }()
 	v, err := h.Kpi.SaveEvidence(actor(c), id, hdr.Filename, fh)
 	if err != nil {
 		h.fail(c, err)
@@ -99,7 +99,7 @@ func (h *H) downloadEvidence(c *gin.Context) {
 		h.fail(c, err)
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	ctype := mime.TypeByExtension(strings.ToLower(filepath.Ext(f.Name())))
 	if ctype == "" {
 		ctype = "application/octet-stream"

@@ -1,0 +1,7 @@
+version: "2"
+linters:
+  exclusions:
+    rules:
+      # penutupan body/berkas di test tidak perlu dicek
+      - path: _test\.go
+        linters: [errcheck]

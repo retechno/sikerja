@@ -156,7 +156,7 @@ func (h *H) uploadMyPhoto(c *gin.Context) {
 		h.fail(c, apperr.Validation("Berkas wajib diunggah", map[string]string{"file": "Pilih berkas foto"}))
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	v, err := h.Employees.SetPhoto(a, a.EmployeeID, f)
 	if err != nil {
 		h.fail(c, err)

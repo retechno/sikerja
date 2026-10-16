@@ -144,7 +144,7 @@ func (h *H) listEmployees(c *gin.Context) {
 		h.fail(c, err)
 		return
 	}
-	okMeta(c, v, pageMeta{Page: f.Page.Page, PerPage: f.Page.PerPage, Total: total})
+	okMeta(c, v, pageMeta{Page: f.Page.Page, PerPage: f.PerPage, Total: total})
 }
 
 func (h *H) getEmployee(c *gin.Context) {
@@ -218,7 +218,7 @@ func (h *H) importEmployees(c *gin.Context) {
 		h.fail(c, apperr.Validation("Berkas wajib diunggah", map[string]string{"file": "Pilih berkas .xlsx"}))
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	res, err := h.Employees.ImportEmployees(actor(c), f)
 	if err != nil {
 		h.fail(c, err)
@@ -254,7 +254,7 @@ func (h *H) employeePhoto(c *gin.Context) {
 		h.fail(c, err)
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	c.Header("Cache-Control", "private, max-age=300")
 	c.Header("Content-Type", mime.TypeByExtension(strings.ToLower(filepath.Ext(f.Name()))))
 	c.Status(http.StatusOK)
@@ -442,7 +442,7 @@ func (h *H) listAudit(c *gin.Context) {
 		h.fail(c, err)
 		return
 	}
-	okMeta(c, v, pageMeta{Page: f.Page.Page, PerPage: f.Page.PerPage, Total: total})
+	okMeta(c, v, pageMeta{Page: f.Page.Page, PerPage: f.PerPage, Total: total})
 }
 
 func (h *H) listNotifications(c *gin.Context) {

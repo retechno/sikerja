@@ -155,7 +155,7 @@ func (r *employeeRepo) List(f EmployeeFilter) ([]model.Employee, int64, error) {
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	off, lim := f.Page.norm()
+	off, lim := f.norm()
 	var out []model.Employee
 	err := q.Preload("Department").Preload("Position").Preload("User").Preload("User.Roles").
 		Order("name ASC").Offset(off).Limit(lim).Find(&out).Error
