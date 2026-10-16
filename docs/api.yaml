@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: SiKerja API
-  version: 1.0.0-rilis1
+  version: 2.0.0-rilis2
   description: |
-    Kontrak REST API SiKerja (Rilis 1: autentikasi, master data, KPI, penilaian, dasbor, laporan).
-    Endpoint izin & cuti (Rilis 2) belum ada.
+    Kontrak REST API SiKerja (Rilis 1: autentikasi, master data, KPI, penilaian, dasbor, laporan;
+    Rilis 2: izin & cuti, hari libur, notifikasi).
 
     **Konvensi**
     - Semua endpoint di bawah `/api/v1`, JSON (kecuali unggah multipart dan unduhan berkas).
@@ -28,6 +28,7 @@ tags:
   - { name: Penilaian }
   - { name: Dasbor }
   - { name: Laporan }
+  - { name: Izin & Cuti, description: Pengajuan, persetujuan bertingkat, saldo, kalender, hari libur }
   - { name: Lainnya }
 
 security:
@@ -456,7 +457,7 @@ paths:
   /notifications:
     get:
       tags: [Lainnya]
-      summary: Notifikasi in-app milik sendiri (pembuatan otomatis menyusul di Rilis 2)
+      summary: Notifikasi in-app milik sendiri (dibuat otomatis oleh alur izin/cuti, pembukaan periode, dan pengingat tenggat; data JSON berisi title, message, link)
       responses: { "200": { description: "OK; data = {items, unread}" } }
   /notifications/read-all:
     post:
@@ -469,6 +470,182 @@ paths:
       summary: Tandai satu notifikasi terbaca
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses: { "204": { description: OK } }
+
+  /leave-types:
+    get:
+      tags: [Izin & Cuti]
+      summary: Daftar jenis izin/cuti (HR melihat semua; lainnya hanya yang aktif)
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/LeaveType" } } } } } } } }
+    post:
+      tags: [Izin & Cuti]
+      summary: Tambah jenis izin/cuti (HR)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LeaveTypeInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /leave-types/{id}:
+    put:
+      tags: [Izin & Cuti]
+      summary: Ubah jenis izin/cuti (HR). Kuota baru berlaku untuk saldo tahun berjalan yang belum diubah manual.
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LeaveTypeInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+    delete:
+      tags: [Izin & Cuti]
+      summary: Hapus jenis yang belum pernah dipakai (HR); yang sudah dipakai → 409, nonaktifkan saja
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: Dihapus }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+  /holidays:
+    get:
+      tags: [Izin & Cuti]
+      summary: Hari libur nasional & cuti bersama pada satu tahun (default tahun berjalan)
+      parameters: [{ name: year, in: query, schema: { type: integer } }]
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/Holiday" } } } } } } } }
+    post:
+      tags: [Izin & Cuti]
+      summary: Tambah hari libur (HR)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/HolidayInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /holidays/import:
+    post:
+      tags: [Izin & Cuti]
+      summary: Impor daftar libur resmi bawaan untuk satu tahun (HR). Tanggal yang sudah ada dilewati; 404 bila tahun belum tersedia.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [year], properties: { year: { type: integer, example: 2026 } } } } } }
+      responses: { "200": { description: "OK; data = {added}" }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" } }
+  /holidays/{id}:
+    put:
+      tags: [Izin & Cuti]
+      summary: Ubah hari libur (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/HolidayInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+    delete:
+      tags: [Izin & Cuti]
+      summary: Hapus hari libur (HR)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: Dihapus }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" } }
+  /leave/balances:
+    get:
+      tags: [Izin & Cuti]
+      summary: Saldo per jenis (kartu saldo H-08, dasbor). Default diri sendiri; karyawan lain sesuai hak lihat.
+      parameters:
+        - { name: employee_id, in: query, schema: { type: integer } }
+        - { name: year, in: query, schema: { type: integer }, description: Default tahun berjalan }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/LeaveBalance" } } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+  /leave/preview:
+    get:
+      tags: [Izin & Cuti]
+      summary: Hitung hari kerja secara live untuk form H-08 (tanpa menyimpan) beserta alur persetujuan dan dampak ke saldo
+      parameters:
+        - { name: type_id, in: query, schema: { type: integer } }
+        - { name: start_date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: end_date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: half_day, in: query, schema: { type: boolean } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeavePreview" } } } } } }
+        "422": { $ref: "#/components/responses/Error" }
+  /leave/summary:
+    get:
+      tags: [Izin & Cuti]
+      summary: Ringkasan dasbor - saldo, 3 pengajuan terakhir, dan antrean persetujuan milik pengguna
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeaveSummary" } } } } } } }
+  /leave/calendar:
+    get:
+      tags: [Izin & Cuti]
+      summary: Kalender tim (H-11) - izin/cuti yang disetujui pada satu bulan, opsional yang menunggu. Alasan tidak ditampilkan.
+      parameters:
+        - { name: month, in: query, schema: { type: string, example: "2026-11" }, description: "YYYY-MM; default bulan ini" }
+        - { name: department_id, in: query, schema: { type: integer } }
+        - { name: include_pending, in: query, schema: { type: boolean } }
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeaveCalendar" } } } } } }, "422": { $ref: "#/components/responses/Error" } }
+  /leave/requests:
+    get:
+      tags: [Izin & Cuti]
+      summary: Riwayat pengajuan (H-09). Default milik sendiri; employee_id lain sesuai hak lihat.
+      parameters:
+        - { name: employee_id, in: query, schema: { type: integer } }
+        - { name: status, in: query, schema: { type: string, enum: [pending, approved, rejected, cancelled] } }
+        - { name: year, in: query, schema: { type: integer } }
+        - { name: page, in: query, schema: { type: integer } }
+        - { name: per_page, in: query, schema: { type: integer } }
+      responses:
+        "200": { description: "OK; meta = {page, per_page, total}", content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/LeaveRequest" } }, meta: { $ref: "#/components/schemas/PageMeta" } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [Izin & Cuti]
+      summary: Ajukan izin/cuti (H-08). Ditolak (422) bila saldo kurang, tanggal tumpang tindih, tanpa hari kerja, atau lampiran wajib tidak ada.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [leave_type_id, start_date, end_date, reason]
+              properties:
+                leave_type_id: { type: integer }
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date }
+                half_day: { type: boolean }
+                half_session: { type: string, enum: [pagi, siang] }
+                reason: { type: string, maxLength: 1000 }
+                substitute_id: { type: integer }
+                attachment: { type: string, format: binary, description: "PDF/JPG/PNG maks 5 MB (jenisnya dicek dari isi berkas)" }
+      responses:
+        "201": { description: Dibuat, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeaveRequest" } } } } } }
+        "422": { $ref: "#/components/responses/Error" }
+  /leave/requests/{id}:
+    get:
+      tags: [Izin & Cuti]
+      summary: Detail pengajuan beserta linimasa persetujuan, saldo, dan bentrok tim (pemilik, atasan, HR, Direktur; lainnya 404)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeaveRequest" } } } } } }, "404": { $ref: "#/components/responses/Error" } }
+  /leave/requests/{id}/cancel:
+    post:
+      tags: [Izin & Cuti]
+      summary: Batalkan pengajuan (hanya pemilik, sebelum tanggal mulai). Saldo yang sudah dipotong dikembalikan.
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+  /leave/requests/{id}/attachment:
+    get:
+      tags: [Izin & Cuti]
+      summary: Unduh lampiran (hak akses sama dengan detail pengajuan)
+      parameters: [{ $ref: "#/components/parameters/Id" }, { name: download, in: query, schema: { type: string, enum: ["1"] } }]
+      responses: { "200": { description: Berkas }, "404": { $ref: "#/components/responses/Error" } }
+  /leave/requests/{id}/approve:
+    post:
+      tags: [Izin & Cuti]
+      summary: Setujui pada tahap yang sedang berjalan. Persetujuan terakhir memotong saldo (transaksi + kunci baris).
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { note: { type: string, maxLength: 500 } } } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "409": { description: "Sudah diproses atau saldo tidak cukup saat persetujuan", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } } }
+  /leave/requests/{id}/reject:
+    post:
+      tags: [Izin & Cuti]
+      summary: Tolak pada tahap yang sedang berjalan; catatan alasan wajib
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [note], properties: { note: { type: string, maxLength: 500 } } } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /leave/approvals:
+    get:
+      tags: [Izin & Cuti]
+      summary: Antrean persetujuan (H-10) milik manajer/HR/Direktur
+      parameters: [{ name: tab, in: query, schema: { type: string, enum: [pending, history], default: pending } }]
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/LeaveRequest" } } } } } } }, "403": { $ref: "#/components/responses/Error" } }
+  /leave/approvals/count:
+    get:
+      tags: [Izin & Cuti]
+      summary: Jumlah pengajuan yang menunggu keputusan pengguna (lencana menu)
+      responses: { "200": { description: "OK; data = {pending}" } }
+  /notification-settings:
+    get:
+      tags: [Izin & Cuti]
+      summary: Saklar notifikasi (H-16, HR)
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/NotifySetting" } } } } } } }, "403": { $ref: "#/components/responses/Error" } }
+    put:
+      tags: [Izin & Cuti]
+      summary: Aktif/nonaktifkan satu jenis notifikasi (HR); mengembalikan seluruh saklar
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [key, enabled], properties: { key: { type: string, example: notify.leave_result }, enabled: { type: boolean } } } } } }
+      responses: { "200": { description: OK }, "400": { $ref: "#/components/responses/Error" }, "403": { $ref: "#/components/responses/Error" } }
 
 components:
   securitySchemes:
@@ -680,3 +857,141 @@ components:
         can_manager: { type: boolean }
         can_finalize: { type: boolean }
         hidden_from_employee: { type: boolean }
+    LeaveType:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        code: { type: string, example: CT }
+        annual_quota: { $ref: "#/components/schemas/Decimal", nullable: true, description: "null = tidak dibatasi" }
+        deducts_balance: { type: boolean, description: "saldo tahunan dikelola & dipotong saat disetujui (cuti tahunan, izin)" }
+        requires_attachment: { type: boolean }
+        attachment_min_days: { $ref: "#/components/schemas/Decimal", description: "lampiran wajib bila hari kerja > nilai ini (sakit: 1)" }
+        allow_half_day: { type: boolean }
+        min_tenure_months: { type: integer }
+        max_days_per_request: { $ref: "#/components/schemas/Decimal", nullable: true }
+        sort: { type: integer }
+        is_active: { type: boolean }
+    LeaveTypeInput:
+      type: object
+      required: [name, code]
+      properties:
+        name: { type: string }
+        code: { type: string, description: "huruf besar/angka/tanda hubung, unik" }
+        annual_quota: { type: number, nullable: true }
+        deducts_balance: { type: boolean }
+        requires_attachment: { type: boolean }
+        attachment_min_days: { type: number }
+        allow_half_day: { type: boolean }
+        min_tenure_months: { type: integer }
+        max_days_per_request: { type: number, nullable: true }
+        sort: { type: integer }
+        is_active: { type: boolean }
+    Holiday:
+      type: object
+      properties: { id: { type: integer }, date: { type: string, format: date-time }, name: { type: string }, type: { type: string, enum: [nasional, cuti_bersama] } }
+    HolidayInput:
+      type: object
+      required: [date, name]
+      properties: { date: { type: string, format: date }, name: { type: string }, type: { type: string, enum: [nasional, cuti_bersama], default: nasional } }
+    LeaveBalance:
+      type: object
+      properties:
+        leave_type: { $ref: "#/components/schemas/LeaveType" }
+        year: { type: integer }
+        tracked: { type: boolean, description: "true = ada kuota yang dipotong" }
+        quota: { $ref: "#/components/schemas/Decimal", nullable: true }
+        used: { $ref: "#/components/schemas/Decimal", description: "terpakai (disetujui); jenis tak berkuota = hari tercatat" }
+        pending: { $ref: "#/components/schemas/Decimal", description: "menunggu persetujuan" }
+        available: { $ref: "#/components/schemas/Decimal", nullable: true, description: "kuota - terpakai - menunggu" }
+    WorkingDays:
+      type: object
+      properties:
+        days: { $ref: "#/components/schemas/Decimal" }
+        half_day: { type: boolean }
+        calendar_days: { type: integer }
+        breakdown: { type: array, items: { $ref: "#/components/schemas/DayInfo" } }
+        skipped: { type: array, items: { $ref: "#/components/schemas/DayInfo" } }
+    DayInfo:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        weekday: { type: string, example: Sen }
+        counted: { type: boolean }
+        skip: { type: string, enum: [weekend, holiday] }
+        holiday: { type: string }
+    FlowStep:
+      type: object
+      properties: { level: { type: integer }, role: { type: string, example: Atasan langsung }, names: { type: array, items: { type: string } } }
+    LeavePreview:
+      type: object
+      properties:
+        working_days: { $ref: "#/components/schemas/WorkingDays" }
+        flow: { type: array, items: { $ref: "#/components/schemas/FlowStep" } }
+        balance: { type: object, nullable: true, description: "quota, used, pending, available, after" }
+        warnings: { type: array, items: { type: string } }
+    LeaveRequest:
+      type: object
+      properties:
+        id: { type: integer }
+        number: { type: string, example: CT-2026-0142 }
+        employee_id: { type: integer }
+        employee: { $ref: "#/components/schemas/Employee" }
+        leave_type_id: { type: integer }
+        leave_type: { $ref: "#/components/schemas/LeaveType" }
+        start_date: { type: string, format: date-time }
+        end_date: { type: string, format: date-time }
+        half_day: { type: boolean }
+        half_session: { type: string, enum: [pagi, siang], nullable: true }
+        days: { $ref: "#/components/schemas/Decimal" }
+        reason: { type: string }
+        substitute: { $ref: "#/components/schemas/Employee" }
+        status: { type: string, enum: [pending_manager, pending_hr, approved, rejected, cancelled] }
+        status_label: { type: string, example: Menunggu Atasan }
+        deducted: { type: boolean }
+        has_attachment: { type: boolean }
+        attachment_name: { type: string }
+        can_cancel: { type: boolean }
+        cancel_until: { type: string, format: date, description: "hari terakhir boleh membatalkan" }
+        can_act: { type: boolean, description: "pengguna berhak menyetujui/menolak pada tahap ini" }
+        timeline: { type: array, items: { type: object, properties: { title: { type: string }, actor: { type: string }, note: { type: string }, at: { type: string, format: date-time, nullable: true }, state: { type: string, enum: [done, current, todo, rejected, cancelled] } } } }
+        skipped: { type: array, items: { $ref: "#/components/schemas/DayInfo" }, description: "tanggal dalam rentang yang tidak dihitung" }
+        balance: { type: object, nullable: true }
+        conflicts: { type: array, items: { type: object, properties: { employee_name: { type: string }, type_name: { type: string }, range: { type: string }, status: { type: string } } } }
+        flow: { type: array, items: { $ref: "#/components/schemas/FlowStep" } }
+    LeaveSummary:
+      type: object
+      properties:
+        year: { type: integer }
+        balances: { type: array, items: { $ref: "#/components/schemas/LeaveBalance" } }
+        recent: { type: array, items: { $ref: "#/components/schemas/LeaveRequest" } }
+        pending_count: { type: integer }
+        queue: { type: array, items: { $ref: "#/components/schemas/LeaveRequest" } }
+    LeaveCalendar:
+      type: object
+      properties:
+        month: { type: string, example: "2026-11" }
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        holidays: { type: array, items: { $ref: "#/components/schemas/Holiday" } }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              employee_id: { type: integer }
+              employee_name: { type: string }
+              department_id: { type: integer }
+              department_name: { type: string }
+              type_code: { type: string }
+              type_name: { type: string }
+              start_date: { type: string, format: date }
+              end_date: { type: string, format: date }
+              half_day: { type: boolean }
+              half_session: { type: string }
+              status: { type: string }
+              days: { type: string }
+    NotifySetting:
+      type: object
+      properties: { key: { type: string }, label: { type: string }, hint: { type: string }, enabled: { type: boolean } }

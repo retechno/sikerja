@@ -31,6 +31,12 @@ type Deps struct {
 	Reports   *service.ReportService
 	Notifs    *service.NotificationService
 	Audit     *service.AuditService
+
+	Leaves      *service.LeaveService
+	LeaveTypes  *service.LeaveTypeService
+	Holidays    *service.HolidayService
+	WorkingDays *service.WorkingDayService
+	NotifyAdmin *service.NotifyService
 }
 
 type H struct{ Deps }
