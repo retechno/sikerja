@@ -6,5 +6,5 @@ tmp_dir = "tmp"
   bin = "./tmp/worker"
   include_ext = ["go"]
   exclude_dir = ["tmp", "storage"]
-  exclude_regex = ["_test\.go"]
+  exclude_regex = ['_test\.go']
   delay = 500

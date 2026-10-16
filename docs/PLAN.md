@@ -87,10 +87,9 @@ Bug yang ditemukan dan diperbaiki lewat pengujian itu: upsert nilai atasan menim
 - **Belum**: modul 6 (izin & cuti: H-08–H-11, tab cuti/hari libur di H-16, kartu saldo cuti & persetujuan di dasbor) dan modul 7
   (notifikasi otomatis — lonceng & endpoint ada, tetapi belum ada yang membuat notifikasi). Itu Rilis 2.
 - **Belum**: GitHub Actions/CI, Dockerfile produksi + Nginx, `docs/DEPLOY.md` (Prompt 3). Lihat `docs/PROMPTS.md`.
-- **Tidak bisa diverifikasi di mesin ini**: `make dev` (tidak ada `make` di Windows ini) dan container `api`/`web`/`worker` berjalan penuh di
-  Docker — image-nya berhasil dibangun dan MySQL/Redis/Mailpit berjalan di Docker, tetapi Docker Desktop mulai membalas HTTP 500 saat
-  saya menjalankan stack penuh, sehingga langkah itu tidak tuntas. Perintah setara sudah dicoba dari host (lihat README). Mohon jalankan
-  `make dev` sekali di mesin Anda.
+- **Stack Docker penuh sudah diverifikasi** lewat `docker compose up -d` (6 container sehat, `/healthz` 200, login lewat proxy web 200,
+  seeder di container jalan). Percobaan ini menemukan bug di `.air.*.toml` (`\.` tidak valid di string TOML) dan sudah diperbaiki.
+  Yang belum dicoba hanya target `make dev` itu sendiri (tidak ada `make` di Windows ini); isinya hanya membungkus perintah di atas.
 - Keputusan yang perlu dikonfirmasi pemilik produk (rinci di `docs/DECISIONS.md`): skor tidak dipotong di 100 (capaian bisa 120 sehingga
   skor bisa >100); Go 1.26 (bukan 1.23) karena dependensi terbaru; satu berkas bukti per realisasi; nilai atasan disembunyikan dari
   karyawan sampai final; HR/Direktur tanpa departemen; shadcn-vue tidak dipakai (komponen sendiri dengan token mockup).
