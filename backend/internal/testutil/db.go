@@ -10,11 +10,15 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/glebarez/sqlite"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
 	"github.com/retechno/sikerja/backend/internal/model"
+	"github.com/retechno/sikerja/backend/internal/service"
 )
+
+func init() { service.BcryptCost = bcrypt.MinCost }
 
 var dbSeq atomic.Int64
 
