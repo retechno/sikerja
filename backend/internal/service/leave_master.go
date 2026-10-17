@@ -1,7 +1,9 @@
 package service
 
 import (
+	"errors"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -344,4 +346,70 @@ var OfficialHolidays = map[int][]model.Holiday{
 		hol(12, 24, "Cuti Bersama Natal", model.HolidayJoint),
 		hol(12, 25, "Hari Raya Natal", model.HolidayNational),
 	},
+}
+
+// ---------- sisa saldo akhir tahun ----------
+
+// SettingCarryOver: bila "true", sisa saldo tahun lalu ditambahkan ke kuota tahun berikutnya (default: tidak).
+const SettingCarryOver = "leave.carry_over"
+
+// ensureBalance membuat saldo tahun ini bila belum ada. Kuota = kuota tahunan jenis cuti, ditambah sisa tahun
+// lalu (kuota − terpakai, tidak negatif) bila pengaturan SettingCarryOver aktif.
+func ensureBalance(r repository.Repos, empID uint64, t *model.LeaveType, year int) (*model.LeaveBalance, error) {
+	if b, err := r.Balances.Find(empID, t.ID, year); err == nil {
+		return b, nil
+	} else if !errors.Is(err, repository.ErrNotFound) {
+		return nil, err
+	}
+	quota := *t.AnnualQuota
+	m, err := r.Settings.All()
+	if err != nil {
+		return nil, err
+	}
+	if m[SettingCarryOver] == "true" {
+		prev, err := r.Balances.Find(empID, t.ID, year-1)
+		switch {
+		case err == nil:
+			if left := prev.Quota.Sub(prev.Used); left.IsPositive() {
+				quota = quota.Add(left)
+			}
+		case !errors.Is(err, repository.ErrNotFound):
+			return nil, err
+		}
+	}
+	return r.Balances.Ensure(empID, t.ID, year, quota)
+}
+
+type LeavePolicy struct {
+	CarryOver bool `json:"carry_over"`
+}
+
+func (s *LeaveTypeService) Policy(a Actor) (*LeavePolicy, error) {
+	if !a.IsHR() {
+		return nil, errForbiddenData
+	}
+	m, err := s.store.R().Settings.All()
+	if err != nil {
+		return nil, err
+	}
+	return &LeavePolicy{CarryOver: m[SettingCarryOver] == "true"}, nil
+}
+
+// SetPolicy hanya memengaruhi saldo yang dibuat setelahnya (saldo tahun berjalan yang sudah ada tidak diubah).
+func (s *LeaveTypeService) SetPolicy(a Actor, in LeavePolicy) (*LeavePolicy, error) {
+	if !a.IsHR() {
+		return nil, errForbiddenData
+	}
+	err := s.store.Tx(func(r repository.Repos) error {
+		old, _ := r.Settings.All()
+		if err := r.Settings.Set(SettingCarryOver, strconv.FormatBool(in.CarryOver)); err != nil {
+			return err
+		}
+		return logActivity(r, a, AuditSettingChange, "setting", 0,
+			map[string]any{SettingCarryOver: old[SettingCarryOver] == "true"}, map[string]any{SettingCarryOver: in.CarryOver})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &in, nil
 }

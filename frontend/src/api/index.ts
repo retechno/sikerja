@@ -292,6 +292,8 @@ export const leave = {
   notifySettings: () => get<NotifySetting[]>('/notification-settings'),
   setNotifySetting: (key: string, enabled: boolean) =>
     send<NotifySetting[]>('put', '/notification-settings', { key, enabled }),
+  policy: () => get<{ carry_over: boolean }>('/leave-policy'),
+  setPolicy: (carry_over: boolean) => send<{ carry_over: boolean }>('put', '/leave-policy', { carry_over }),
 }
 
 export interface ScheduleBody {

@@ -17,6 +17,8 @@ const api = vi.hoisted(() => ({
   importHolidays: vi.fn(),
   notifySettings: vi.fn(),
   setNotifySetting: vi.fn(),
+  policy: vi.fn(),
+  setPolicy: vi.fn(),
 }))
 
 vi.mock('@/api', async (orig) => {
@@ -42,6 +44,8 @@ beforeEach(() => {
   document.body.innerHTML = ''
   api.types.mockResolvedValue(types)
   api.saveType.mockResolvedValue(CT)
+  api.policy.mockResolvedValue({ carry_over: false })
+  api.setPolicy.mockResolvedValue({ carry_over: true })
   api.holidays.mockResolvedValue([
     { id: 1, date: '2026-12-25T00:00:00Z', name: 'Hari Raya Natal', type: 'nasional' },
     { id: 2, date: '2026-12-24T00:00:00Z', name: 'Cuti Bersama Natal', type: 'cuti_bersama' },
@@ -70,6 +74,17 @@ describe('Pengaturan → Jenis cuti (H-16)', () => {
     await flushPromises()
     return w
   }
+
+  it('saklar bawa sisa saldo: bawaan nonaktif, klik menyimpan ke API', async () => {
+    const w = await mountTab()
+    const sw = w.get('[data-testid="sw-carry-over"]')
+    expect(sw.attributes('aria-checked')).toBe('false')
+    api.policy.mockResolvedValue({ carry_over: true })
+    await sw.trigger('click')
+    await flushPromises()
+    expect(api.setPolicy).toHaveBeenCalledWith(true)
+    expect(w.get('[data-testid="sw-carry-over"]').attributes('aria-checked')).toBe('true')
+  })
 
   it('menampilkan kuota, potong saldo, lampiran, setengah hari, dan alur persetujuan', async () => {
     const w = await mountTab()

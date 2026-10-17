@@ -1,0 +1,10 @@
+# /etc/logrotate.d/sikerja — rotasi log backup (log container diatur oleh Docker: lihat docker-compose.prod.yml & daemon.json)
+/var/log/sikerja-backup.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root adm
+}

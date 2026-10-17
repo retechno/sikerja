@@ -263,6 +263,8 @@ export interface ReportRow {
   behavior_score: Dec | null
   final_score: Dec | null
   grade: string
+  /** Atasan penilai; kosong sebelum penilaian dikirim. */
+  appraiser: string
   status: string
 }
 

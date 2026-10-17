@@ -11,6 +11,26 @@ import { approvalText, attachmentText, quotaText } from '@/lib/leave'
 // H-16 (tab "Jenis cuti"): jenis izin/cuti, kuota, lampiran, setengah hari.
 const toast = useToastStore()
 const { data, loading, error, reload } = useLoader(() => leave.types())
+const { data: policy, reload: reloadPolicy } = useLoader(() => leave.policy())
+const policyBusy = ref(false)
+
+async function toggleCarry() {
+  if (!policy.value) return
+  policyBusy.value = true
+  try {
+    await leave.setPolicy(!policy.value.carry_over)
+    await reloadPolicy()
+    toast.success(
+      policy.value?.carry_over
+        ? 'Sisa saldo akan dibawa ke tahun berikutnya.'
+        : 'Sisa saldo hangus di akhir tahun.',
+    )
+  } catch (e) {
+    toast.error(e instanceof ApiError ? e.message : 'Gagal menyimpan')
+  } finally {
+    policyBusy.value = false
+  }
+}
 
 interface Form {
   name: string
@@ -129,6 +149,30 @@ async function confirmRemove() {
 
 <template>
   <PageState :loading="loading && !data" :error="error" @retry="reload">
+    <section v-if="policy" class="card mb-4 flex items-center gap-3" data-testid="carry-over">
+      <div class="min-w-0 flex-1">
+        <b>Bawa sisa saldo ke tahun berikutnya</b>
+        <div class="muted text-[12.5px]">
+          Nonaktif (bawaan): sisa saldo hangus di akhir tahun. Berlaku untuk saldo yang dibuat setelah diubah.
+        </div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="policy.carry_over"
+        :aria-label="`Bawa sisa saldo: ${policy.carry_over ? 'aktif' : 'nonaktif'}`"
+        :disabled="policyBusy"
+        class="relative h-7 w-12 flex-none rounded-full transition disabled:opacity-60"
+        :class="policy.carry_over ? 'bg-primary' : 'bg-[#CBD1CA]'"
+        data-testid="sw-carry-over"
+        @click="toggleCarry"
+      >
+        <span
+          class="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all"
+          :class="policy.carry_over ? 'left-[22px]' : 'left-0.5'"
+        />
+      </button>
+    </section>
     <section v-if="data" class="card !p-2 pb-1" data-testid="leave-types">
       <div class="flex items-center gap-3 px-3.5 pb-3 pt-3">
         <div class="flex-1">

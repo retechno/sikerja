@@ -73,7 +73,7 @@ func TestLoginRateLimit5FailuresLocks1Minute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setelah 1 menit boleh coba lagi
-	w.MR.FastForward(61 * time.Second)
+	w.AdvanceRedis(61 * time.Second)
 	_, _, err = auth.Login(ctx, "rina@test.id", testutil.Password, false)
 	assert.NoError(t, err)
 }

@@ -493,6 +493,16 @@ paths:
       summary: Hapus jenis yang belum pernah dipakai (HR); yang sudah dipakai → 409, nonaktifkan saja
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses: { "204": { description: Dihapus }, "403": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
+  /leave-policy:
+    get:
+      tags: [Izin & Cuti]
+      summary: Kebijakan saldo (HR) — carry_over true = sisa saldo tahun lalu ditambahkan ke kuota tahun berikutnya
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeavePolicy" } } } } } }, "403": { $ref: "#/components/responses/Error" } }
+    put:
+      tags: [Izin & Cuti]
+      summary: Ubah kebijakan saldo (HR); hanya memengaruhi saldo yang dibuat setelahnya
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LeavePolicy" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" } }
   /holidays:
     get:
       tags: [Izin & Cuti]
@@ -904,6 +914,10 @@ components:
         max_days_per_request: { $ref: "#/components/schemas/Decimal", nullable: true }
         sort: { type: integer }
         is_active: { type: boolean }
+    LeavePolicy:
+      type: object
+      properties:
+        carry_over: { type: boolean, description: "false (default) = sisa saldo hangus di akhir tahun" }
     LeaveTypeInput:
       type: object
       required: [name, code]

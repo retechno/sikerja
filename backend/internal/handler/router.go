@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -21,6 +22,8 @@ func NewRouter(d Deps) *gin.Engine {
 	}
 	h := &H{Deps: d}
 	r := gin.New()
+	// IP klien hanya dipercaya dari reverse proxy yang terdaftar (TRUSTED_PROXIES); selain itu pakai alamat koneksi.
+	_ = r.SetTrustedProxies(d.Cfg.TrustedProxies)
 	r.Use(middleware.Recovery(d.Log), middleware.Logger(d.Log), middleware.SecurityHeaders(), middleware.CORS(d.Cfg.CORSOrigins))
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"code": "not_found", "message": "Endpoint tidak ditemukan"}})
@@ -33,11 +36,12 @@ func NewRouter(d Deps) *gin.Engine {
 
 	// ---- publik ----
 	au := api.Group("/auth")
-	au.POST("/login", h.login)
-	au.POST("/refresh", h.refresh)
+	// pembatasan per IP melengkapi kunci per akun di AuthService (mencegah tebak-password lintas akun & banjir email)
+	au.POST("/login", middleware.RateLimit(d.Redis, "login", 20, time.Minute), h.login)
+	au.POST("/refresh", middleware.RateLimit(d.Redis, "refresh", 60, time.Minute), h.refresh)
 	au.POST("/logout", h.logout)
-	au.POST("/forgot-password", h.forgotPassword)
-	au.POST("/reset-password", h.resetPassword)
+	au.POST("/forgot-password", middleware.RateLimit(d.Redis, "forgot", 5, time.Minute), h.forgotPassword)
+	au.POST("/reset-password", middleware.RateLimit(d.Redis, "reset", 10, time.Minute), h.resetPassword)
 
 	// ---- wajib login ----
 	in := api.Group("", middleware.Auth(d.Auth))
@@ -121,6 +125,8 @@ func NewRouter(d Deps) *gin.Engine {
 	hr.POST("/leave-types", h.createLeaveType)
 	hr.PUT("/leave-types/:id", h.updateLeaveType)
 	hr.DELETE("/leave-types/:id", h.deleteLeaveType)
+	hr.GET("/leave-policy", h.leavePolicy)
+	hr.PUT("/leave-policy", h.setLeavePolicy)
 	hr.POST("/holidays", h.createHoliday)
 	hr.POST("/holidays/import", h.importHolidays)
 	hr.PUT("/holidays/:id", h.updateHoliday)

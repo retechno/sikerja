@@ -29,6 +29,7 @@ func NewDeps(cfg config.Config, log zerolog.Logger, db *gorm.DB, rdb *redis.Clie
 	return handler.Deps{
 		Cfg:         cfg,
 		Log:         log,
+		Redis:       rdb,
 		Auth:        service.NewAuthService(store, rdb, cfg, mailer),
 		Employees:   service.NewEmployeeService(store, files, cache),
 		Master:      service.NewMasterService(store, cache),

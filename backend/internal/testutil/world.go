@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"testing"
@@ -82,6 +83,24 @@ func (f *FakeMailer) NoticesTo(email string) []Notice {
 		}
 	}
 	return out
+}
+
+// AdvanceRedis memajukan waktu Redis: miniredis lewat FastForward; Redis sungguhan dengan mengakhiri semua TTL
+// (cukup untuk kunci kedaluwarsa seperti kunci login).
+func (w *World) AdvanceRedis(d time.Duration) {
+	w.T.Helper()
+	if w.MR != nil {
+		w.MR.FastForward(d)
+		return
+	}
+	ctx := context.Background()
+	keys, err := w.Rdb.Keys(ctx, "*").Result()
+	must(w.T, err)
+	for _, k := range keys {
+		if ttl, err := w.Rdb.PTTL(ctx, k).Result(); err == nil && ttl > 0 && ttl <= d {
+			w.Rdb.Del(ctx, k)
+		}
+	}
 }
 
 func NewWorld(t testing.TB) *World {

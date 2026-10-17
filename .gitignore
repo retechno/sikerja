@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # Go
 backend/bin/
@@ -27,3 +28,6 @@ backend/storage/
 # Artefak uji browser
 .playwright-mcp/
 shot-*.png
+
+# Penanda deploy server
+.deployed
