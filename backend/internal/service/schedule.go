@@ -206,7 +206,11 @@ func (s *ScheduleService) List(a Actor) ([]model.WorkSchedule, error) {
 	if !a.IsHR() && !a.IsDirector() {
 		return nil, errForbiddenData
 	}
-	return s.store.R().Schedules.List()
+	out, err := s.store.R().Schedules.List()
+	if out == nil {
+		out = []model.WorkSchedule{}
+	}
+	return out, err
 }
 
 func (s *ScheduleService) save(a Actor, id uint64, in ScheduleInput) (*model.WorkSchedule, error) {

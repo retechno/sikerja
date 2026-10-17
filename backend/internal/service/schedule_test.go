@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -343,4 +344,13 @@ func TestDepartmentScheduleAssignment(t *testing.T) {
 	d, err = ms.UpdateDepartment(hr, e.w.CS.ID, service.DepartmentInput{Name: e.w.CS.Name, Code: e.w.CS.Code})
 	require.NoError(t, err)
 	assert.Nil(t, d.ScheduleID)
+}
+
+// Regresi: slice kosong harus berupa [] di JSON (bukan null) agar frontend tidak error saat membaca .length.
+func TestWorkingDaysJSONHasNoNullSlices(t *testing.T) {
+	r := service.CountWorkingDaysFor(service.DefaultSchedule, day("2026-10-26"), day("2026-10-26"), nil, nil) // Senin biasa
+	b, err := json.Marshal(r)
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"skipped":[]`)
+	assert.NotContains(t, string(b), "null")
 }

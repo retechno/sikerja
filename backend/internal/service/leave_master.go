@@ -201,7 +201,11 @@ func (s *HolidayService) List(year int) ([]model.Holiday, error) {
 	if year == 0 {
 		year = time.Now().Year()
 	}
-	return s.store.R().Holidays.ByYear(year)
+	hs, err := s.store.R().Holidays.ByYear(year)
+	if hs == nil {
+		hs = []model.Holiday{} // JSON [] bukan null
+	}
+	return hs, err
 }
 
 func (s *HolidayService) Create(a Actor, in HolidayInput) (*model.Holiday, error) {

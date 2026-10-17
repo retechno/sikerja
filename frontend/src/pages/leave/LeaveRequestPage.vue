@@ -117,7 +117,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 // jam kerja hari yang dipilih (dari rincian API) — dasar tombol Pagi/Siang dan jam bawaan
 const dayHours = computed(() =>
-  parseHours(preview.value?.working_days.breakdown.find((d) => d.counted)?.hours),
+  parseHours((preview.value?.working_days.breakdown ?? []).find((d) => d.counted)?.hours),
 )
 function quick(which: 'pagi' | 'siang') {
   // paruh pertama/kedua dihitung server dari jam efektif (istirahat tidak ikut dihitung)
@@ -438,7 +438,7 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
             </div>
             <div v-if="preview" class="flex flex-wrap gap-1.5" aria-label="Rincian hari">
               <span
-                v-for="d in preview.working_days.breakdown.slice(0, 31)"
+                v-for="d in (preview.working_days.breakdown ?? []).slice(0, 31)"
                 :key="d.date"
                 class="rounded-md px-2 py-0.5 text-xs font-semibold"
                 :class="
@@ -455,17 +455,19 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
               >
             </p>
             <p class="muted m-0 basis-full text-[12.5px]">
-              <template v-if="preview && !preview.working_days.skipped.length"
+              <template v-if="preview && !(preview.working_days.skipped ?? []).length"
                 >Tidak ada hari libur atau hari di luar jadwal kerja pada rentang ini.</template
               >
               <template v-else-if="preview"
-                >Tidak dihitung: {{ preview.working_days.skipped.length }} hari<template v-if="holidayNote">
+                >Tidak dihitung: {{ (preview.working_days.skipped ?? []).length }} hari<template
+                  v-if="holidayNote"
+                >
                   (libur: {{ holidayNote }})</template
                 >.</template
               >
             </p>
-            <ul v-if="preview?.warnings.length" class="m-0 basis-full list-none p-0" role="alert">
-              <li v-for="w in preview.warnings" :key="w" class="text-[13px] font-semibold text-warn-fg">
+            <ul v-if="preview?.warnings?.length" class="m-0 basis-full list-none p-0" role="alert">
+              <li v-for="w in preview.warnings ?? []" :key="w" class="text-[13px] font-semibold text-warn-fg">
                 ⚠ {{ w }}
               </li>
             </ul>

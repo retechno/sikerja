@@ -78,6 +78,7 @@ func CountWorkingDaysFor(sch Schedule, start, end time.Time, holidays map[string
 	start, end = DateOnly(start), DateOnly(end)
 	out := WorkingDays{
 		Days: decimal.Zero, Schedule: sch.Name, HalfDay: partial != nil,
+		Breakdown: []DayInfo{}, Skipped: []DayInfo{}, // jangan null di JSON
 		StartDate: start.Format("2006-01-02"), EndDate: end.Format("2006-01-02"),
 	}
 	var hours DayHours
