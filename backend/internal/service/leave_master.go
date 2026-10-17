@@ -167,7 +167,10 @@ func (s *LeaveTypeService) Delete(a Actor, id uint64) error {
 
 // ---------- hari libur ----------
 
-type HolidayService struct{ store repository.Store }
+type HolidayService struct {
+	store repository.Store
+	src   HolidaySource // sumber impor eksternal; nil = fitur impor eksternal dimatikan
+}
 
 func NewHolidayService(store repository.Store) *HolidayService { return &HolidayService{store: store} }
 

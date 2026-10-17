@@ -3,6 +3,7 @@ import type {
   AppraisalView,
   Colleague,
   Holiday,
+  HolidayCandidate,
   WorkSchedule,
   LeaveBalance,
   LeaveCalendar,
@@ -249,6 +250,10 @@ export const leave = {
     id ? send<Holiday>('put', `/holidays/${id}`, b) : send<Holiday>('post', '/holidays', b),
   deleteHoliday: (id: number) => send<void>('delete', `/holidays/${id}`),
   importHolidays: (year: number) => send<{ added: number }>('post', '/holidays/import', { year }),
+  previewHolidayImport: (year: number) =>
+    send<HolidayCandidate[]>('post', '/holidays/import/preview', { year }),
+  confirmHolidayImport: (items: HolidayBody[]) =>
+    send<{ added: number; skipped: number }>('post', '/holidays/import/confirm', { items }),
   balances: (params: { employee_id?: number; year?: number } = {}) =>
     get<LeaveBalance[]>('/leave/balances', params),
   /** Hitung hari kerja live (tanpa menyimpan). */

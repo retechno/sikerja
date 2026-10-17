@@ -118,7 +118,7 @@ ditambahkan sebagai langkah berikutnya. Tidak ada CSP ketat karena font dimuat d
 | Beberapa berkas bukti per realisasi | belum | Mockup menunjukkan satu daftar; SPEC hanya "lampiran". Saat ini satu berkas per realisasi (DECISIONS). |
 | Kolom Penilai di export PDF | sebagian | Ada di tabel layar dan Excel; lebar halaman PDF sudah penuh. |
 | Antarmuka penyesuaian saldo per karyawan | belum | Tidak ada di SPEC (hanya kuota per jenis). Perlu bila HR ingin memberi tambahan hari ke satu orang. |
-| Hari libur 2027 dan seterusnya | **risiko operasional** | Daftar bawaan hanya 2026 (`OfficialHolidays`). Mulai Jan 2027 HR harus menambahkannya di H-16, jika tidak, hitung hari kerja menghitung hari libur sebagai hari kerja. Ada di DEPLOY.md. |
+| Hari libur 2027 dan seterusnya | **sebagian** | Tombol "Impor hari libur" (H-16) mengambil pratinjau dari kalender publik; HR tetap wajib mencocokkan dengan SKB dan menyimpan sendiri. Belum ada sinkron otomatis maupun pengingat ke HR bila tahun depan masih kosong. Jika HR lupa mengimpor, hari libur terhitung hari kerja. |
 | Verifikasi visual H-08…H-11 dan halaman Jam kerja di browser, layar 360 px | belum | Terhalang jaringan Docker–host yang macet saat pengerjaan; hanya diuji lewat Vitest dan API. |
 | Email end-to-end ke SMTP nyata / Mailpit, pemicu cron 08.00 diamati sungguhan | belum | Logikanya diuji; pada stack produksi worker terbukti menjadwalkan `0 8 * * *` zona `Asia/Jakarta`, tetapi belum ada pengiriman yang diamati. |
 | Rilis 3 (integrasi data KPI, 360°, WhatsApp, GPS, aplikasi mobile) | di luar cakupan | SPEC menyebutnya rilis berikutnya. |

@@ -222,3 +222,19 @@ sebagai penyebut** (saldo tetap dalam hari).
   driver menggeser parameter sehingga `date = ?` tidak cocok (tanggal libur kembar, bentrok izin tak terdeteksi). Container/server produksi berzona UTC sehingga
   aman, tetapi DSN test (Makefile, CI, testutil) kini memakai `loc=UTC` agar hasil tidak bergantung zona host. Menjalankan API langsung di host non-UTC:
   gunakan `loc=UTC` juga.
+
+## Impor hari libur dari sumber eksternal
+
+- **Sumber**: kalender publik Google "Hari libur di Indonesia" (iCal, tanpa API key), URL di `HOLIDAY_ICS_URL` (nilai `off` mematikan fitur).
+  Dipilih setelah dicoba langsung: dua API komunitas yang umum disebut (`api-harilibur.vercel.app`, `libur.deno.dev`) sudah mati (402/404), sedangkan
+  kalender ini hidup dan memuat 2021–2027 termasuk cuti bersama. Sumber dibuat interface (`HolidaySource`) sehingga mudah diganti.
+- **Selalu lewat pratinjau**: `POST /holidays/import/preview` tidak menyimpan; HR memilih baris lalu `POST /holidays/import/confirm`. Tanggal yang sudah ada
+  tidak pernah ditimpa. Tidak ada sinkron otomatis di latar belakang: tanggal cuti bersama ditetapkan SKB dan data sumber bisa terlambat atau keliru.
+- **Penyaringan**: hanya entri berdeskripsi "Hari libur nasional"; entri "Perayaan" (1 Ramadan, Malam Tahun Baru, dst.) dibuang. Nama berawalan "Cuti Bersama" =
+  jenis cuti bersama, selain itu nasional. Satu entri per tanggal (nasional diutamakan). Akhiran "(belum pasti)" dan deskripsi "tentatif" menjadi penanda
+  **Tentatif**; baris tentatif tidak dicentang otomatis.
+- **Mutu data sumber tidak dijamin**: pada 2027 ada nama berbahasa Inggris ("Joint Holiday for Good Friday") dan tanggal tentatif; pada 2026 beberapa tanggal berbeda
+  dari daftar bawaan (mis. "Hari Kedua Muharram"). Karena itu peringatan "cocokkan dengan SKB" ditampilkan di modal dan HR memilih sendiri.
+- **Cadangan**: bila sumber tak terjangkau (502) atau dimatikan (404), modal menampilkan pesan dan tombol "Pakai daftar bawaan" (daftar 2026 di kode) tetap ada.
+  Server api perlu akses keluar (HTTPS) ke host sumber.
+- **Belum dibuat**: pengingat otomatis ke HR tiap Desember bila libur tahun depan masih kosong.
