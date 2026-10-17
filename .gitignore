@@ -17,7 +17,7 @@ frontend/dist/
 *.log
 
 # Upload & storage lokal
-storage/
+/storage/
 backend/storage/
 
 # Editor & OS
