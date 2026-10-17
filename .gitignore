@@ -23,3 +23,7 @@ backend/storage/
 .idea/
 .vscode/
 .DS_Store
+
+# Artefak uji browser
+.playwright-mcp/
+shot-*.png

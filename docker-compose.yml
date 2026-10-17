@@ -1,0 +1,76 @@
+# Lingkungan pengembangan: `make dev` (atau `docker compose up --build`).
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sikerja}
+      MYSQL_USER: ${MYSQL_USER:-sikerja}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sikerja}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    ports: ["3307:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports: ["6380:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports: ["8025:8025", "1025:1025"]
+
+  api:
+    build: { context: ./backend, dockerfile: Dockerfile.dev }
+    command: air -c .air.api.toml
+    restart: unless-stopped
+    env_file: [.env]
+    environment: { DB_DSN: "${MYSQL_USER:-sikerja}:${MYSQL_PASSWORD:-sikerja}@tcp(mysql:3306)/${MYSQL_DATABASE:-sikerja}?charset=utf8mb4&parseTime=true&loc=Local" }
+    volumes:
+      - ./backend:/app
+      - go-mod:/go/pkg/mod
+      - storage:/app/storage
+    ports: ["${API_PORT:-8080}:8080"]
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: { context: ./backend, dockerfile: Dockerfile.dev }
+    command: air -c .air.worker.toml
+    restart: unless-stopped
+    env_file: [.env]
+    volumes:
+      - ./backend:/app
+      - go-mod:/go/pkg/mod
+    depends_on:
+      redis: { condition: service_healthy }
+      mailpit: { condition: service_started }
+
+  web:
+    build: { context: ./frontend, dockerfile: Dockerfile.dev }
+    restart: unless-stopped
+    environment: { VITE_API_PROXY: "http://api:8080" }
+    volumes:
+      - ./frontend:/app
+      - web-node-modules:/app/node_modules
+    ports: ["5173:5173"]
+    depends_on: [api]
+
+volumes:
+  mysql-data:
+  go-mod:
+  storage:
+  web-node-modules:

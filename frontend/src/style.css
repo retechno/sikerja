@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas font-sans text-sm leading-normal text-ink antialiased;
+  }
+  a {
+    @apply text-primary hover:text-primary-dark;
+  }
+  /* wadah scroll tabel menjadi containing block agar elemen sr-only (absolute) ikut terpotong */
+  .overflow-x-auto {
+    position: relative;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+
+@layer components {
+  /* Kartu & tipografi */
+  .card {
+    @apply rounded-card border border-line bg-white p-5;
+  }
+  .card h2 {
+    @apply m-0 text-base font-bold;
+  }
+  .hint {
+    @apply mt-0.5 text-[13px] text-ink-soft;
+  }
+  .muted {
+    @apply text-ink-soft;
+  }
+  .k {
+    @apply text-[12.5px] font-medium text-ink-soft;
+  }
+  .v {
+    @apply mt-1.5 text-[30px] font-bold leading-[1.1] tracking-tight;
+  }
+  .d {
+    @apply mt-1.5 text-[12.5px] text-ink-soft;
+  }
+  .up {
+    @apply font-semibold text-good-fg;
+  }
+  .down {
+    @apply font-semibold text-bad-fg;
+  }
+
+  /* Tombol (target sentuh min. 44 px) */
+  .btn {
+    @apply inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line-input bg-white px-[18px] font-semibold text-ink no-underline transition hover:bg-canvas hover:text-ink disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn.pri {
+    @apply border-primary bg-primary text-white hover:bg-primary-dark hover:text-white;
+  }
+  .btn.danger {
+    @apply border-bad-fg bg-bad-fg text-white hover:opacity-90 hover:text-white;
+  }
+  .btn.sm {
+    @apply min-h-[36px] rounded-[10px] px-3 text-[13px];
+  }
+
+  /* Formulir */
+  .input {
+    @apply min-h-[44px] w-full rounded-[10px] border border-line-input bg-white px-3 py-2 text-ink placeholder:text-ink-soft/70 disabled:bg-canvas disabled:text-ink-soft;
+  }
+  textarea.input {
+    @apply min-h-[96px] resize-y;
+  }
+  .field {
+    @apply flex flex-col gap-1.5 text-[13px] font-semibold;
+  }
+  .field small {
+    @apply font-normal text-ink-soft;
+  }
+  .field .err {
+    @apply font-medium text-bad-fg;
+  }
+  .input.invalid {
+    @apply border-bad-fg;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-[3px] text-xs font-semibold;
+  }
+  .b-good {
+    @apply bg-good-bg text-good-fg;
+  }
+  .b-info {
+    @apply bg-info-bg text-info-fg;
+  }
+  .b-warn {
+    @apply bg-warn-bg text-warn-fg;
+  }
+  .b-bad {
+    @apply bg-bad-bg text-bad-fg;
+  }
+  .b-mute {
+    @apply bg-mute-bg text-mute-fg;
+  }
+  .b-teal {
+    @apply bg-primary-soft text-[#0B4A43];
+  }
+  .b-ist {
+    @apply bg-primary text-white;
+  }
+
+  /* Tabel */
+  .tbl {
+    @apply w-full border-collapse text-[13.5px];
+  }
+  .tbl th {
+    @apply whitespace-nowrap border-b border-line px-3 py-2.5 text-left text-[11.5px] font-semibold uppercase tracking-wider text-ink-soft;
+  }
+  .tbl td {
+    @apply border-b border-line-soft px-3 py-3 align-middle;
+  }
+  .tbl tr:last-child td {
+    @apply border-b-0;
+  }
+  .tbl tr.sel td {
+    @apply bg-primary-tint;
+  }
+  .tbl tfoot td {
+    @apply border-t border-line font-bold;
+  }
+  .tbl .num {
+    @apply text-right tabular-nums;
+  }
+
+  .avatar {
+    @apply flex h-10 w-10 flex-none items-center justify-center overflow-hidden rounded-full bg-primary-soft text-sm font-bold text-primary;
+  }
+  .avatar.s {
+    @apply h-8 w-8 text-xs;
+  }
+  .avatar.l {
+    @apply h-14 w-14 text-lg;
+  }
+}

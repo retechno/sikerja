@@ -1,0 +1,6 @@
+FROM golang:1.26-alpine
+RUN apk add --no-cache git && go install github.com/air-verse/air@latest
+WORKDIR /app
+ENV GOFLAGS=-buildvcs=false
+EXPOSE 8080
+CMD ["air", "-c", ".air.api.toml"]

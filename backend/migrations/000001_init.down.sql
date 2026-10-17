@@ -1,0 +1,18 @@
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS password_resets;
+DROP TABLE IF EXISTS activity_log;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS appraisal_scores;
+DROP TABLE IF EXISTS appraisals;
+DROP TABLE IF EXISTS behavior_aspects;
+DROP TABLE IF EXISTS kpi_results;
+DROP TABLE IF EXISTS appraisal_periods;
+DROP TABLE IF EXISTS kpi_indicators;
+DROP TABLE IF EXISTS kpi_templates;
+DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS positions;
+DROP TABLE IF EXISTS departments;
+SET FOREIGN_KEY_CHECKS = 1;
