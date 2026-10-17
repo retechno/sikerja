@@ -218,3 +218,7 @@ sebagai penyebut** (saldo tetap dalam hari).
   commit. TLS dihentikan Nginx di host (certbot), container web hanya mendengarkan di 127.0.0.1. Nama image produksi `sikerja-prod-*` agar tidak bertabrakan
   dengan image dev `sikerja-api`/`sikerja-web`.
 - **Belum diputuskan produk**: batas penilaian atasan per periode, tombol "Kirim pengingat" manual, banyak berkas bukti per realisasi (hanya ada di mockup).
+- **Zona waktu DSN**: kolom `DATE` dibandingkan dengan `time.Time` UTC tengah malam. Dengan `loc=Local` pada host yang zonanya bukan UTC (mis. Windows WIB),
+  driver menggeser parameter sehingga `date = ?` tidak cocok (tanggal libur kembar, bentrok izin tak terdeteksi). Container/server produksi berzona UTC sehingga
+  aman, tetapi DSN test (Makefile, CI, testutil) kini memakai `loc=UTC` agar hasil tidak bergantung zona host. Menjalankan API langsung di host non-UTC:
+  gunakan `loc=UTC` juga.

@@ -1,7 +1,7 @@
 // Package testutil berisi helper test. Bawaan: SQLite in-memory + miniredis (tanpa Docker).
 // Dengan TEST_MYSQL_DSN dan/atau TEST_REDIS_ADDR (dipakai CI) test berjalan pada MySQL dan Redis sungguhan:
 //
-//	TEST_MYSQL_DSN="root:root@tcp(127.0.0.1:3307)/?parseTime=true&loc=Local"   (akun yang boleh CREATE DATABASE)
+//	TEST_MYSQL_DSN="root:root@tcp(127.0.0.1:3307)/?parseTime=true&loc=UTC"   (akun yang boleh CREATE DATABASE)
 //	TEST_REDIS_ADDR=127.0.0.1:6380                                              (DB 15 dikosongkan tiap test)
 //
 // Skema MySQL dibuat dari migrasi asli (golang-migrate), sehingga migrasi ikut teruji. Jalankan dengan `go test -p 1`
@@ -110,7 +110,7 @@ func openMySQL(adminDSN string) (*gorm.DB, error) {
 		params = rest[q:]
 	}
 	if params == "" {
-		params = "?parseTime=true&loc=Local"
+		params = "?parseTime=true&loc=UTC"
 	}
 	// satu database stabil per binary test (paket) supaya tidak menumpuk sisa database
 	name := "sikerja_test_" + strings.NewReplacer(".", "_", "-", "_").Replace(filepath.Base(os.Args[0]))

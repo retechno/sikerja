@@ -36,7 +36,7 @@ jobs:
           --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=3s --health-retries=20
     env:
       # test memakai MySQL & Redis sungguhan (skema dari migrasi asli); lihat internal/testutil/db.go
-      TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/?charset=utf8mb4&parseTime=true&loc=Local
+      TEST_MYSQL_DSN: root:root@tcp(127.0.0.1:3306)/?charset=utf8mb4&parseTime=true&loc=UTC
       TEST_REDIS_ADDR: 127.0.0.1:6379
     steps:
       - uses: actions/checkout@v4
