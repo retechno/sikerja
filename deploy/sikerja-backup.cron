@@ -1,0 +1,4 @@
+# /etc/cron.d/sikerja-backup — backup harian pukul 01.15 (waktu server). Sesuaikan path repo.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+15 1 * * * root BACKUP_DIR=/var/backups/sikerja KEEP_DAYS=14 /opt/sikerja/deploy/backup.sh >> /var/log/sikerja-backup.log 2>&1

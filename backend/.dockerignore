@@ -1,0 +1,7 @@
+tmp
+bin
+storage
+.air.*.toml
+Dockerfile*
+*.test
+*.out
