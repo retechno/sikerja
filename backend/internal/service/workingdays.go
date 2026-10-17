@@ -56,9 +56,12 @@ type WorkingDays struct {
 	Days           decimal.Decimal `json:"days"`
 	Breakdown      []DayInfo       `json:"breakdown"`
 	Skipped        []DayInfo       `json:"skipped"`
-	HalfDay        bool            `json:"half_day"` // izin sebagian hari
-	PartialMinutes int             `json:"partial_minutes,omitempty"`
-	DayMinutes     int             `json:"day_minutes,omitempty"` // lama jam kerja pada hari izin sebagian
+	HalfDay        bool            `json:"half_day"`                  // izin sebagian hari
+	PartialMinutes int             `json:"partial_minutes,omitempty"` // menit kerja efektif izin (tanpa istirahat)
+	DayMinutes     int             `json:"day_minutes,omitempty"`     // menit kerja efektif hari itu (tanpa istirahat)
+	Break          string          `json:"break,omitempty"`           // jam istirahat, mis. "12:00–13:00"
+	Morning        string          `json:"morning,omitempty"`         // paruh pertama hari kerja (rentang jam), untuk satu tanggal
+	Afternoon      string          `json:"afternoon,omitempty"`
 	Schedule       string          `json:"schedule"`
 	StartDate      string          `json:"start_date"`
 	EndDate        string          `json:"end_date"`
@@ -88,7 +91,7 @@ func CountWorkingDaysFor(sch Schedule, start, end time.Time, holidays map[string
 		case holidays[key] != "":
 			info.Counted, info.Skip, info.Holiday = false, SkipHoliday, holidays[key]
 		default:
-			info.Hours, info.Minutes = h.String(), h.Minutes()
+			info.Hours, info.Minutes = h.String(), sch.NetDay(h)
 			hours = h
 		}
 		out.CalendarDay++
@@ -99,11 +102,20 @@ func CountWorkingDaysFor(sch Schedule, start, end time.Time, holidays map[string
 			out.Skipped = append(out.Skipped, info)
 		}
 	}
+	if sch.Break != nil {
+		out.Break = DayHours{Start: sch.Break.Start, End: sch.Break.End}.String()
+	}
+	if start.Equal(end) && out.Days.Equal(decOne) {
+		me, as := sch.Halves(hours)
+		out.Morning = DayHours{Start: hours.Start, End: me}.String()
+		out.Afternoon = DayHours{Start: as, End: hours.End}.String()
+	}
 	if partial != nil {
-		out.PartialMinutes, out.DayMinutes = partial.Minutes(), hours.Minutes()
-		ok := out.Days.Equal(decOne) && start.Equal(end) && partial.From >= hours.Start && partial.To <= hours.End && partial.To > partial.From
+		out.PartialMinutes, out.DayMinutes = sch.Net(partial.From, partial.To), sch.NetDay(hours)
+		ok := out.Days.Equal(decOne) && start.Equal(end) && partial.From >= hours.Start && partial.To <= hours.End &&
+			out.PartialMinutes > 0 && out.DayMinutes > 0
 		if ok {
-			out.Days = decimal.NewFromInt(int64(partial.Minutes())).Div(decimal.NewFromInt(int64(hours.Minutes()))).Round(2)
+			out.Days = decimal.NewFromInt(int64(out.PartialMinutes)).Div(decimal.NewFromInt(int64(out.DayMinutes))).Round(2)
 		} else {
 			out.Days = decimal.Zero
 		}
@@ -116,7 +128,8 @@ func CountWorkingDays(start, end time.Time, holidays map[string]string, half boo
 	var p *Partial
 	if half {
 		h := DefaultSchedule.Days[time.Monday]
-		p = &Partial{From: h.Start, To: h.Mid()}
+		me, _ := DefaultSchedule.Halves(h)
+		p = &Partial{From: h.Start, To: me}
 	}
 	return CountWorkingDaysFor(DefaultSchedule, start, end, holidays, p)
 }

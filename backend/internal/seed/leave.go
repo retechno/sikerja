@@ -178,10 +178,10 @@ func seedLeave(r repository.Repos, now time.Time) error {
 		if ev.Half {
 			s := ev.Session
 			l.HalfSession = &s
-			// jadwal default 08.00–17.00: pagi = 08.00–12.30, siang = 12.30–17.00
-			from, to := "08:00", "12:30"
+			// jadwal default 08.00–17.00 (istirahat 12.00–13.00): pagi = 08.00–12.00, siang = 13.00–17.00
+			from, to := "08:00", "12:00"
 			if ev.Session == model.SessionAfternoon {
-				from, to = "12:30", "17:00"
+				from, to = "13:00", "17:00"
 			}
 			l.StartTime, l.EndTime = &from, &to
 		}
@@ -297,7 +297,7 @@ func ensureSchedules(r repository.Repos) error {
 		return err
 	}
 	mk := func(name string, def bool, start, satEnd string) error {
-		m := &model.WorkSchedule{Name: name, IsDefault: def}
+		m := &model.WorkSchedule{Name: name, IsDefault: def, BreakStart: "12:00", BreakEnd: "13:00"}
 		for wd := 1; wd <= 5; wd++ {
 			end := "17:00"
 			m.Days = append(m.Days, model.WorkScheduleDay{Weekday: wd, StartTime: start, EndTime: end})

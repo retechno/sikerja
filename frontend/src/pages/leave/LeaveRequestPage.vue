@@ -120,11 +120,12 @@ const dayHours = computed(() =>
   parseHours(preview.value?.working_days.breakdown.find((d) => d.counted)?.hours),
 )
 function quick(which: 'pagi' | 'siang') {
-  const h = dayHours.value
-  if (!h) return
-  const mid = h[0] + Math.floor((h[1] - h[0]) / 2)
-  fromTime.value = fromMinutes(which === 'pagi' ? h[0] : mid)
-  toTime.value = fromMinutes(which === 'pagi' ? mid : h[1])
+  // paruh pertama/kedua dihitung server dari jam efektif (istirahat tidak ikut dihitung)
+  const w = preview.value?.working_days
+  const r = parseHours(which === 'pagi' ? w?.morning : w?.afternoon)
+  if (!r) return
+  fromTime.value = fromMinutes(r[0])
+  toTime.value = fromMinutes(r[1])
 }
 // masuk mode sebagian hari: isi paruh pagi begitu jam kerja hari itu diketahui
 watch([preview, mode], () => {
@@ -141,7 +142,7 @@ watch(start, () => {
 const partialInfo = computed(() => {
   const w = preview.value?.working_days
   if (!half.value || !w?.partial_minutes || !w.day_minutes) return ''
-  return `${fmtHours(w.partial_minutes)} dari ${fmtHours(w.day_minutes)} kerja hari itu`
+  return `${fmtHours(w.partial_minutes)} dari ${fmtHours(w.day_minutes)} kerja efektif hari itu`
 })
 // ringkasan jam kerja per hari pada rentang, mis. "Sen–Jum 09:00–17:00 · Sab 09:00–15:00"
 const hoursSummary = computed(() => {
@@ -369,7 +370,10 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
                   Paruh siang
                 </button>
                 <span v-if="dayHours" class="muted self-center text-xs"
-                  >Jam kerja hari itu {{ fromMinutes(dayHours[0]) }}–{{ fromMinutes(dayHours[1]) }}</span
+                  >Jam kerja hari itu {{ fromMinutes(dayHours[0]) }}–{{ fromMinutes(dayHours[1])
+                  }}<template v-if="preview?.working_days.break">
+                    · istirahat {{ preview.working_days.break }}</template
+                  ></span
                 >
               </div>
             </div>
@@ -445,7 +449,10 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
               >
             </div>
             <p v-if="hoursSummary" class="muted m-0 basis-full text-[12.5px]" data-testid="hours">
-              Jam kerja ({{ preview?.working_days.schedule }}): {{ hoursSummary }}
+              Jam kerja ({{ preview?.working_days.schedule }}): {{ hoursSummary
+              }}<template v-if="preview?.working_days.break">
+                · istirahat {{ preview.working_days.break }} tidak dihitung</template
+              >
             </p>
             <p class="muted m-0 basis-full text-[12.5px]">
               <template v-if="preview && !preview.working_days.skipped.length"

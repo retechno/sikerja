@@ -113,9 +113,12 @@ func (Setting) TableName() string { return "app_settings" }
 // WorkSchedule: jadwal kerja mingguan yang dipakai departemen. Hari yang tidak punya baris = libur mingguan.
 type WorkSchedule struct {
 	Base
-	Name      string            `gorm:"size:100;not null;uniqueIndex:uq_work_schedules_name" json:"name"`
-	IsDefault bool              `gorm:"not null;default:false" json:"is_default"`
-	Days      []WorkScheduleDay `gorm:"foreignKey:ScheduleID;constraint:OnDelete:CASCADE" json:"days"`
+	Name      string `gorm:"size:100;not null;uniqueIndex:uq_work_schedules_name" json:"name"`
+	IsDefault bool   `gorm:"not null;default:false" json:"is_default"`
+	// BreakStart/BreakEnd: jam istirahat "HH:MM" (kosong = tanpa istirahat); tidak dihitung sebagai jam kerja.
+	BreakStart string            `gorm:"size:5" json:"break_start"`
+	BreakEnd   string            `gorm:"size:5" json:"break_end"`
+	Days       []WorkScheduleDay `gorm:"foreignKey:ScheduleID;constraint:OnDelete:CASCADE" json:"days"`
 }
 
 // WorkScheduleDay: jam kerja satu hari. Weekday 0 = Minggu ... 6 = Sabtu; jam "HH:MM".

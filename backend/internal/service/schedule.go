@@ -17,16 +17,54 @@ type DayHours struct{ Start, End int }
 
 func (d DayHours) Minutes() int { return d.End - d.Start }
 
-// Mid: titik tengah hari kerja (batas "pagi" dan "siang" pada izin setengah hari).
-func (d DayHours) Mid() int { return d.Start + (d.End-d.Start)/2 }
-
 func (d DayHours) String() string { return fmtHM(d.Start) + "–" + fmtHM(d.End) }
+
+// Break adalah jam istirahat (menit sejak 00:00); tidak dihitung sebagai jam kerja.
+type Break struct{ Start, End int }
 
 // Schedule adalah jadwal kerja mingguan; hari yang tidak ada di Days = libur mingguan.
 type Schedule struct {
-	ID   uint64
-	Name string
-	Days map[time.Weekday]DayHours
+	ID    uint64
+	Name  string
+	Days  map[time.Weekday]DayHours
+	Break *Break
+}
+
+func overlapMinutes(a1, a2, b1, b2 int) int {
+	lo, hi := max(a1, b1), min(a2, b2)
+	if hi > lo {
+		return hi - lo
+	}
+	return 0
+}
+
+// Net: menit kerja efektif antara a dan b (menit sejak 00:00), tanpa jam istirahat.
+func (s Schedule) Net(a, b int) int {
+	if b <= a {
+		return 0
+	}
+	n := b - a
+	if s.Break != nil {
+		n -= overlapMinutes(a, b, s.Break.Start, s.Break.End)
+	}
+	return n
+}
+
+// NetDay: menit kerja efektif satu hari penuh (jam kerja dikurangi istirahat).
+func (s Schedule) NetDay(h DayHours) int { return s.Net(h.Start, h.End) }
+
+// Halves membagi hari kerja efektif menjadi dua sama panjang: paruh pertama berakhir di morningEnd,
+// paruh kedua mulai di afternoonStart (setelah istirahat bila batas jatuh tepat di awal istirahat).
+func (s Schedule) Halves(h DayHours) (morningEnd, afternoonStart int) {
+	half := s.NetDay(h) / 2
+	t := h.Start
+	for t < h.End && s.Net(h.Start, t) < half {
+		t++
+	}
+	if s.Break != nil && t == s.Break.Start {
+		return t, s.Break.End
+	}
+	return t, t
 }
 
 func (s Schedule) Hours(w time.Weekday) (DayHours, bool) {
@@ -36,7 +74,7 @@ func (s Schedule) Hours(w time.Weekday) (DayHours, bool) {
 
 // DefaultSchedule dipakai bila tabel jadwal belum berisi default (Senin–Jumat 08.00–17.00).
 var DefaultSchedule = func() Schedule {
-	s := Schedule{Name: "Jam kantor (Sen-Jum 08.00-17.00)", Days: map[time.Weekday]DayHours{}}
+	s := Schedule{Name: "Jam kantor (Sen-Jum 08.00-17.00)", Days: map[time.Weekday]DayHours{}, Break: &Break{Start: 12 * 60, End: 13 * 60}}
 	for d := time.Monday; d <= time.Friday; d++ {
 		s.Days[d] = DayHours{Start: 8 * 60, End: 17 * 60}
 	}
@@ -51,6 +89,11 @@ func ScheduleFromModel(m *model.WorkSchedule) Schedule {
 		if err1 == nil && err2 == nil && b > a && d.Weekday >= 0 && d.Weekday <= 6 {
 			s.Days[time.Weekday(d.Weekday)] = DayHours{Start: a, End: b}
 		}
+	}
+	bs, e1 := parseHM(m.BreakStart)
+	be, e2 := parseHM(m.BreakEnd)
+	if e1 == nil && e2 == nil && be > bs {
+		s.Break = &Break{Start: bs, End: be}
 	}
 	return s
 }
@@ -103,9 +146,11 @@ type ScheduleDayInput struct {
 }
 
 type ScheduleInput struct {
-	Name      string             `json:"name"`
-	IsDefault bool               `json:"is_default"`
-	Days      []ScheduleDayInput `json:"days"`
+	Name       string             `json:"name"`
+	IsDefault  bool               `json:"is_default"`
+	BreakStart string             `json:"break_start"` // jam istirahat "HH:MM"; kosong = tanpa istirahat
+	BreakEnd   string             `json:"break_end"`
+	Days       []ScheduleDayInput `json:"days"`
 }
 
 func (in *ScheduleInput) validate() ([]model.WorkScheduleDay, error) {
@@ -116,6 +161,19 @@ func (in *ScheduleInput) validate() ([]model.WorkScheduleDay, error) {
 	}
 	if len(in.Days) == 0 {
 		f["days"] = "Pilih minimal satu hari kerja"
+	}
+	in.BreakStart, in.BreakEnd = strings.TrimSpace(in.BreakStart), strings.TrimSpace(in.BreakEnd)
+	if in.BreakStart != "" || in.BreakEnd != "" {
+		bs, e1 := parseHM(in.BreakStart)
+		be, e2 := parseHM(in.BreakEnd)
+		switch {
+		case e1 != nil || e2 != nil:
+			f["break_start"] = "Isi jam mulai dan selesai istirahat (HH:MM) atau kosongkan keduanya"
+		case be <= bs:
+			f["break_start"] = "Jam selesai istirahat harus setelah jam mulai"
+		default:
+			in.BreakStart, in.BreakEnd = fmtHM(bs), fmtHM(be)
+		}
 	}
 	seen := map[int]bool{}
 	var days []model.WorkScheduleDay
@@ -182,6 +240,7 @@ func (s *ScheduleService) save(a Actor, id uint64, in ScheduleInput) (*model.Wor
 			return fieldErr("Nama jadwal sudah dipakai", "name")
 		}
 		m.Name, m.IsDefault, m.Days = in.Name, in.IsDefault, days
+		m.BreakStart, m.BreakEnd = in.BreakStart, in.BreakEnd
 		if id == 0 && !in.IsDefault {
 			if _, err := r.Schedules.Default(); err == repository.ErrNotFound {
 				m.IsDefault = true // jadwal pertama otomatis menjadi default

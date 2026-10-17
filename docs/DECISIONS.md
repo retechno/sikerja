@@ -183,10 +183,15 @@ sebagai penyebut** (saldo tetap dalam hari).
 - **Hari kerja mengikuti jadwal departemen pengaju** (HR/Direktur tanpa departemen memakai jadwal default). Sabtu terhitung 1 hari kerja hanya bila jadwalnya memuat
   Sabtu; hari libur nasional/cuti bersama tetap tidak dihitung. Satu titik penentu (`scheduleFor`) sehingga jadwal per karyawan/shift bisa ditambah tanpa mengubah
   pemanggil. Mengubah jadwal **tidak menghitung ulang** pengajuan yang sudah ada.
-- **Izin sebagian hari = jam mulai–selesai** pada satu hari kerja, di dalam jam kerja hari itu: `hari = lama izin ÷ jam kerja hari itu`, dibulatkan 2 desimal
-  (08.00–10.00 dari 9 jam = 0,22; Sabtu 09.00–12.00 dari 6 jam = 0,5). Jam istirahat **tidak** dikurangkan dari penyebut (jam kerja = selesai − mulai).
-  Tombol "Paruh pagi/siang" mengisi separuh jam kerja hari itu. Minimal 15 menit; seluruh jam kerja ditolak (ajukan sebagai satu hari penuh). Hanya jenis dengan
-  "boleh setengah hari" (Izin) yang bisa sebagian hari. Dua izin di tanggal sama boleh bila jamnya tidak beririsan. Tetap satu tahap persetujuan (atasan langsung).
+- **Jam istirahat dikurangi** (permintaan pemilik produk: istirahat 12.00–13.00). Istirahat adalah atribut jadwal (`work_schedules.break_start/break_end`,
+  bawaan 12.00–13.00 pada kedua jadwal, bisa diubah HR per jadwal atau dikosongkan). Jam kerja efektif hari itu = selesai − mulai − irisan dengan istirahat
+  (Sen–Jum 08–17 = 8 jam; Sabtu 09–15 = 5 jam).
+- **Izin sebagian hari = jam mulai–selesai** pada satu hari kerja, di dalam jam kerja hari itu: `hari = jam efektif izin ÷ jam efektif hari itu`, dibulatkan
+  2 desimal (08.00–10.00 dari 8 jam = 0,25; Senin 11.00–14.00 = 2 jam efektif karena istirahat terpotong = 0,25; Sabtu 09.00–11.30 dari 5 jam = 0,5).
+  "Paruh pagi/siang" membagi jam **efektif** hari itu sama panjang (jadwal 08–17: pagi 08.00–12.00, siang 13.00–17.00; Sabtu 09–15: pagi 09.00–11.30,
+  siang 11.30–15.00); server yang menghitung batasnya. Minimal 15 menit efektif (rentang yang hanya berisi istirahat ditolak); seluruh jam kerja ditolak
+  (ajukan sebagai satu hari penuh). Hanya jenis dengan "boleh setengah hari" (Izin) yang bisa sebagian hari. Dua izin di tanggal sama boleh bila jamnya
+  tidak beririsan. Tetap satu tahap persetujuan (atasan langsung).
 - Kolom saldo/hari dilebarkan ke `DECIMAL(6,2)` (sebelumnya 1 desimal) agar 0,22 tersimpan; `leave_requests.start_time/end_time` tambahan, `half_session`
   hanya terisi bila rentang tepat paruh pertama/kedua. Data lama (hanya sesi) tetap terbaca.
 - Konsekuensi: saldo izin bisa berpecahan (mis. 0,22); tampilan memakai koma dan hingga 2 desimal.

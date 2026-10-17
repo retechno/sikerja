@@ -13,7 +13,7 @@ import (
 
 // Jadwal B: Senin–Jumat 09.00–17.00 dan Sabtu 09.00–15.00 (jadwal Customer Service di masa depan).
 func scheduleB() service.ScheduleInput {
-	in := service.ScheduleInput{Name: "Shift Sabtu"}
+	in := service.ScheduleInput{Name: "Shift Sabtu", BreakStart: "12:00", BreakEnd: "13:00"}
 	for wd := 1; wd <= 5; wd++ {
 		in.Days = append(in.Days, service.ScheduleDayInput{Weekday: wd, StartTime: "09:00", EndTime: "17:00"})
 	}
@@ -59,11 +59,15 @@ func TestCountWorkingDaysBySchedule(t *testing.T) {
 		{"jadwal B: Jumat–Senin = 3 (Minggu libur)", b, "2026-10-23", "2026-10-26", nil, "3"},
 		{"jadwal A: Jumat–Senin = 2", service.DefaultSchedule, "2026-10-23", "2026-10-26", nil, "2"},
 		{"jadwal B: Minggu bukan hari kerja", b, "2026-10-25", "2026-10-25", nil, "0"},
-		{"Sabtu B 09–12 dari 6 jam = 0,5", b, "2026-10-24", "2026-10-24", &service.Partial{From: hm(9, 0), To: hm(12, 0)}, "0.5"},
-		{"Sabtu B 09–11 dari 6 jam = 0,33", b, "2026-10-24", "2026-10-24", &service.Partial{From: hm(9, 0), To: hm(11, 0)}, "0.33"},
-		{"Senin B 09–11 dari 8 jam = 0,25", b, "2026-10-26", "2026-10-26", &service.Partial{From: hm(9, 0), To: hm(11, 0)}, "0.25"},
-		{"Senin A 08–10 dari 9 jam = 0,22", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(8, 0), To: hm(10, 0)}, "0.22"},
-		{"Senin A pagi (08.00–12.30) = 0,5", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(8, 0), To: hm(12, 30)}, "0.5"},
+		{"Sabtu B 09–11:30 dari 5 jam efektif = 0,5", b, "2026-10-24", "2026-10-24", &service.Partial{From: hm(9, 0), To: hm(11, 30)}, "0.5"},
+		{"Sabtu B 09–12 (3 jam efektif dari 5) = 0,6", b, "2026-10-24", "2026-10-24", &service.Partial{From: hm(9, 0), To: hm(12, 0)}, "0.6"},
+		{"Sabtu B 11–14 (istirahat dipotong, 2 jam dari 5) = 0,4", b, "2026-10-24", "2026-10-24", &service.Partial{From: hm(11, 0), To: hm(14, 0)}, "0.4"},
+		{"Senin B 09–11 dari 7 jam efektif = 0,29", b, "2026-10-26", "2026-10-26", &service.Partial{From: hm(9, 0), To: hm(11, 0)}, "0.29"},
+		{"Senin A 08–10 dari 8 jam efektif = 0,25", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(8, 0), To: hm(10, 0)}, "0.25"},
+		{"Senin A pagi (08.00–12.00) = 0,5", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(8, 0), To: hm(12, 0)}, "0.5"},
+		{"Senin A siang (13.00–17.00) = 0,5", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(13, 0), To: hm(17, 0)}, "0.5"},
+		{"melintasi istirahat 11–14 → 2 jam efektif = 0,25", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(11, 0), To: hm(14, 0)}, "0.25"},
+		{"hanya jam istirahat 12–13 = 0", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(12, 0), To: hm(13, 0)}, "0"},
 		{"jam sebelum jam masuk = 0", service.DefaultSchedule, "2026-10-26", "2026-10-26", &service.Partial{From: hm(7, 0), To: hm(9, 0)}, "0"},
 		{"jam melewati jam pulang Sabtu B = 0", b, "2026-10-24", "2026-10-24", &service.Partial{From: hm(13, 0), To: hm(16, 0)}, "0"},
 		{"sebagian hari di hari libur = 0", b, "2026-10-28", "2026-10-28", &service.Partial{From: hm(9, 0), To: hm(10, 0)}, "0"},
@@ -81,7 +85,8 @@ func TestCountWorkingDaysBySchedule(t *testing.T) {
 	require.Len(t, r.Breakdown, 4)
 	assert.Equal(t, "09:00–17:00", r.Breakdown[0].Hours)
 	assert.Equal(t, "09:00–15:00", r.Breakdown[1].Hours)
-	assert.Equal(t, 360, r.Breakdown[1].Minutes)
+	assert.Equal(t, 300, r.Breakdown[1].Minutes, "Sabtu 09–15 dikurangi istirahat 1 jam")
+	assert.Equal(t, "12:00–13:00", r.Break)
 	assert.Equal(t, service.SkipWeekend, r.Breakdown[2].Skip, "Minggu")
 }
 
@@ -121,38 +126,38 @@ func TestPartialLeaveByHours(t *testing.T) {
 	e.saturdaySchedule(t)
 	ctx := context.Background()
 
-	// CS, Sabtu 09.00–12.00 = setengah dari 6 jam kerja
+	// CS, Sabtu 09.00–11.30 = setengah dari 5 jam kerja efektif (09–15 dikurangi istirahat 12–13)
 	in := e.input(e.iz, "2026-10-24", "2026-10-24")
-	in.HalfDay, in.StartTime, in.EndTime = true, "09:00", "12:00"
+	in.HalfDay, in.StartTime, in.EndTime = true, "09:00", "11:30"
 	v := e.submit(t, e.w.EmpCS1, in)
 	assert.True(t, v.Days.Equal(dd("0.5")))
 	require.NotNil(t, v.StartTime)
 	assert.Equal(t, "09:00", *v.StartTime)
-	assert.Equal(t, "12:00", *v.EndTime)
+	assert.Equal(t, "11:30", *v.EndTime)
 	require.NotNil(t, v.HalfSession, "tepat setengah hari pertama → sesi pagi")
 	assert.Equal(t, model.SessionMorning, *v.HalfSession)
 	e.approve(t, e.w.MgrCS, v.ID) // cukup atasan langsung
 	assert.True(t, e.used(t, e.w.EmpCS1, e.iz).Equal(dd("0.5")))
 
-	// IT, Senin 08.00–10.00 dari 9 jam = 0,22; sesi tidak terisi (jam bebas)
+	// IT, Senin 08.00–10.00 dari 8 jam efektif = 0,25; sesi tidak terisi (jam bebas)
 	in2 := e.input(e.iz, "2026-10-26", "2026-10-26")
 	in2.HalfDay, in2.StartTime, in2.EndTime = true, "08:00", "10:00"
 	v2 := e.submit(t, e.w.EmpIT1, in2)
-	assert.True(t, v2.Days.Equal(dd("0.22")))
+	assert.True(t, v2.Days.Equal(dd("0.25")))
 	assert.Nil(t, v2.HalfSession)
 	e.approve(t, e.w.MgrIT, v2.ID)
-	assert.True(t, e.used(t, e.w.EmpIT1, e.iz).Equal(dd("0.22")))
-	// batal mengembalikan tepat 0,22
+	assert.True(t, e.used(t, e.w.EmpIT1, e.iz).Equal(dd("0.25")))
+	// batal mengembalikan tepat 0,25
 	_, err := e.svc.Cancel(ctx, e.w.Actor(e.w.EmpIT1), v2.ID)
 	require.NoError(t, err)
 	assert.True(t, e.used(t, e.w.EmpIT1, e.iz).IsZero())
 
-	// sesi pagi/siang tetap bekerja sebagai pintasan (jadwal A: 08.00–12.30 / 12.30–17.00)
+	// sesi pagi/siang tetap bekerja sebagai pintasan (jadwal A: 08.00–12.00 / 13.00–17.00, istirahat 12–13)
 	sess := e.input(e.iz, "2026-10-27", "2026-10-27")
 	sess.HalfDay, sess.HalfSession = true, model.SessionAfternoon
 	v3 := e.submit(t, e.w.EmpIT1, sess)
 	assert.True(t, v3.Days.Equal(dd("0.5")))
-	assert.Equal(t, "12:30", *v3.StartTime)
+	assert.Equal(t, "13:00", *v3.StartTime)
 	assert.Equal(t, "17:00", *v3.EndTime)
 }
 
@@ -169,6 +174,7 @@ func TestPartialLeaveValidation(t *testing.T) {
 		{"melewati jam pulang", "2026-10-26", "16:00", "18:00", e.iz, "start_time"},
 		{"jam selesai sebelum mulai", "2026-10-26", "10:00", "09:00", e.iz, "end_time"},
 		{"kurang dari 15 menit", "2026-10-26", "10:00", "10:10", e.iz, "end_time"},
+		{"hanya jam istirahat (12.10–12.50)", "2026-10-26", "12:10", "12:50", e.iz, "end_time"},
 		{"seluruh jam kerja = satu hari penuh", "2026-10-26", "08:00", "17:00", e.iz, "end_time"},
 		{"format jam salah", "2026-10-26", "pagi", "10:00", e.iz, "start_time"},
 		{"hari bukan hari kerja (Sabtu, jadwal A)", "2026-10-24", "09:00", "11:00", e.iz, "start_date"},
@@ -218,13 +224,13 @@ func TestCalendarCarriesPartialHours(t *testing.T) {
 	require.Len(t, cal.Items, 1)
 	assert.Equal(t, "13:00", cal.Items[0].StartTime)
 	assert.Equal(t, "15:00", cal.Items[0].EndTime)
-	assert.Equal(t, "0,22", cal.Items[0].Days)
+	assert.Equal(t, "0,25", cal.Items[0].Days)
 }
 
 // ---------- administrasi jadwal ----------
 
 func scheduleA() service.ScheduleInput {
-	in := service.ScheduleInput{Name: "Jam kantor", IsDefault: true}
+	in := service.ScheduleInput{Name: "Jam kantor", IsDefault: true, BreakStart: "12:00", BreakEnd: "13:00"}
 	for wd := 1; wd <= 5; wd++ {
 		in.Days = append(in.Days, service.ScheduleDayInput{Weekday: wd, StartTime: "08:00", EndTime: "17:00"})
 	}
@@ -256,9 +262,19 @@ func TestScheduleAdmin(t *testing.T) {
 		assert.Equal(t, 422, status(t, err), in.Name)
 	}
 
+	badBreak := scheduleA()
+	badBreak.Name = "Istirahat salah"
+	badBreak.BreakStart, badBreak.BreakEnd = "13:00", "12:00"
+	_, err = ss.Create(hr, badBreak)
+	assert.Equal(t, 422, status(t, err), "istirahat terbalik")
+	badBreak.BreakStart, badBreak.BreakEnd = "12:00", ""
+	_, err = ss.Create(hr, badBreak)
+	assert.Equal(t, 422, status(t, err), "istirahat setengah terisi")
+
 	a, err := ss.Create(hr, scheduleA())
 	require.NoError(t, err)
 	assert.True(t, a.IsDefault)
+	assert.Equal(t, "12:00", a.BreakStart)
 	b, err := ss.Create(hr, scheduleB())
 	require.NoError(t, err)
 	assert.False(t, b.IsDefault)

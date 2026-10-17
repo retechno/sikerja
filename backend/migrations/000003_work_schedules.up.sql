@@ -6,6 +6,8 @@ CREATE TABLE work_schedules (
   updated_at DATETIME(3) NULL,
   name VARCHAR(100) NOT NULL,
   is_default TINYINT(1) NOT NULL DEFAULT 0,
+  break_start VARCHAR(5) NULL,
+  break_end VARCHAR(5) NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_work_schedules_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -44,9 +46,10 @@ ALTER TABLE leave_types
 
 -- Dua jadwal bawaan; "Jam kantor" menjadi default untuk departemen yang belum memilih jadwal.
 -- weekday: 0 = Minggu ... 6 = Sabtu; hari yang tidak terdaftar = libur mingguan.
-INSERT INTO work_schedules (created_at, updated_at, name, is_default) VALUES
-  (NOW(3), NOW(3), 'Jam kantor (Sen-Jum 08.00-17.00)', 1),
-  (NOW(3), NOW(3), 'Jam kantor + Sabtu (Sen-Jum 09.00-17.00, Sab 09.00-15.00)', 0);
+-- Istirahat 12.00-13.00 tidak dihitung sebagai jam kerja (dipakai untuk izin per jam).
+INSERT INTO work_schedules (created_at, updated_at, name, is_default, break_start, break_end) VALUES
+  (NOW(3), NOW(3), 'Jam kantor (Sen-Jum 08.00-17.00)', 1, '12:00', '13:00'),
+  (NOW(3), NOW(3), 'Jam kantor + Sabtu (Sen-Jum 09.00-17.00, Sab 09.00-15.00)', 0, '12:00', '13:00');
 
 INSERT INTO work_schedule_days (created_at, updated_at, schedule_id, weekday, start_time, end_time)
 SELECT NOW(3), NOW(3), s.id, d.weekday,

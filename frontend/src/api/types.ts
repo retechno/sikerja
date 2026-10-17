@@ -359,8 +359,12 @@ export interface WorkingDays {
   schedule: string
   /** Izin sebagian hari. */
   half_day: boolean
+  /** Menit kerja efektif (tanpa istirahat). */
   partial_minutes?: number
   day_minutes?: number
+  break?: string
+  morning?: string
+  afternoon?: string
   calendar_days: number
   breakdown: DayInfo[]
   skipped: DayInfo[]
@@ -493,5 +497,8 @@ export interface WorkSchedule {
   id: number
   name: string
   is_default: boolean
+  /** Jam istirahat "HH:MM"; kosong = tanpa istirahat. */
+  break_start: string
+  break_end: string
   days: WorkScheduleDay[]
 }

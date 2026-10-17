@@ -28,6 +28,8 @@ const open = ref(false)
 const editing = ref<WorkSchedule | null>(null)
 const name = ref('')
 const isDefault = ref(false)
+const breakStart = ref('12:00')
+const breakEnd = ref('13:00')
 const rows = ref<Row[]>([])
 const errors = ref<Record<string, string>>({})
 const busy = ref(false)
@@ -37,6 +39,8 @@ function openForm(s: WorkSchedule | null) {
   editing.value = s
   name.value = s?.name ?? ''
   isDefault.value = s?.is_default ?? false
+  breakStart.value = s ? s.break_start : '12:00'
+  breakEnd.value = s ? s.break_end : '13:00'
   rows.value = ORDER.map((wd) => {
     const d = s?.days.find((x) => x.weekday === wd)
     const weekday = wd >= 1 && wd <= 5
@@ -53,7 +57,13 @@ function openForm(s: WorkSchedule | null) {
 
 const hoursOf = (r: Row) => {
   const m = toMinutes(r.end) - toMinutes(r.start)
-  return Number.isNaN(m) || m <= 0 ? '' : fmtHours(m)
+  if (Number.isNaN(m) || m <= 0) return ''
+  const a = toMinutes(r.start)
+  const b = toMinutes(r.end)
+  const bs = breakStart.value ? toMinutes(breakStart.value) : NaN
+  const be = breakEnd.value ? toMinutes(breakEnd.value) : NaN
+  const brk = Number.isNaN(bs) || Number.isNaN(be) ? 0 : Math.max(0, Math.min(b, be) - Math.max(a, bs))
+  return fmtHours(m - brk)
 }
 
 async function save() {
@@ -62,6 +72,10 @@ async function save() {
   const e: Record<string, string> = {}
   if (!name.value.trim()) e.name = 'Nama jadwal wajib diisi'
   if (!on.length) e.days = 'Pilih minimal satu hari kerja'
+  if (!!breakStart.value !== !!breakEnd.value)
+    e.break_start = 'Isi jam mulai dan selesai istirahat, atau kosongkan keduanya'
+  else if (breakStart.value && toMinutes(breakEnd.value) <= toMinutes(breakStart.value))
+    e.break_start = 'Jam selesai istirahat harus setelah jam mulai'
   for (const r of on) {
     if (Number.isNaN(toMinutes(r.start)) || Number.isNaN(toMinutes(r.end)))
       e.days = `Isi jam ${WEEKDAY_NAMES[r.weekday]} dengan benar`
@@ -77,6 +91,8 @@ async function save() {
     await schedules.save(editing.value?.id ?? null, {
       name: name.value.trim(),
       is_default: isDefault.value,
+      break_start: breakStart.value,
+      break_end: breakEnd.value,
       days: on.map((r) => ({ weekday: r.weekday, start_time: r.start, end_time: r.end })),
     })
     toast.success('Jadwal kerja disimpan.')
@@ -138,7 +154,12 @@ async function confirmRemove() {
                 <b>{{ s.name }}</b>
                 <span v-if="s.is_default" class="badge b-teal ml-2 !py-0">default</span>
               </td>
-              <td data-testid="summary">{{ summarizeSchedule(s.days) }}</td>
+              <td data-testid="summary">
+                {{ summarizeSchedule(s.days) }}
+                <span v-if="s.break_start" class="muted text-xs" data-testid="break-text"
+                  >· istirahat {{ s.break_start }}–{{ s.break_end }}</span
+                >
+              </td>
               <td class="whitespace-nowrap text-right">
                 <button
                   type="button"
@@ -163,9 +184,9 @@ async function confirmRemove() {
         </table>
       </div>
       <p class="hint px-3.5 pb-3 pt-1">
-        Izin sebagian hari dihitung dari jam: lama izin dibagi jam kerja hari itu (mis. 2 jam dari Sabtu
-        09.00–15.00 = 0,33 hari). Jadwal per shift (mis. untuk Customer Service) cukup dibuat di sini lalu
-        dipasang ke departemennya.
+        Izin sebagian hari dihitung dari jam efektif: lama izin dibagi jam kerja hari itu, keduanya tanpa jam
+        istirahat (mis. 2 jam dari 8 jam efektif = 0,25 hari). Jadwal per shift (mis. untuk Customer Service)
+        cukup dibuat di sini lalu dipasang ke departemennya.
       </p>
     </section>
   </PageState>
@@ -229,6 +250,31 @@ async function confirmRemove() {
           errors.days
         }}</span>
       </fieldset>
+      <div class="grid grid-cols-2 gap-3 sm:gap-4">
+        <label class="field"
+          >Istirahat mulai <small>tidak dihitung sebagai jam kerja</small>
+          <input
+            v-model="breakStart"
+            type="time"
+            class="input"
+            :class="{ invalid: errors.break_start }"
+            data-testid="break-start"
+          />
+        </label>
+        <label class="field"
+          >Istirahat selesai
+          <input
+            v-model="breakEnd"
+            type="time"
+            class="input"
+            :class="{ invalid: errors.break_start }"
+            data-testid="break-end"
+          />
+        </label>
+        <span v-if="errors.break_start" class="col-span-2 text-[13px] font-medium text-bad-fg" role="alert">{{
+          errors.break_start
+        }}</span>
+      </div>
       <label class="flex min-h-[44px] items-center gap-2.5 font-semibold"
         ><input
           v-model="isDefault"

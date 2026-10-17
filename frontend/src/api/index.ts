@@ -297,6 +297,8 @@ export const leave = {
 export interface ScheduleBody {
   name: string
   is_default: boolean
+  break_start: string
+  break_end: string
   days: { weekday: number; start_time: string; end_time: string }[]
 }
 

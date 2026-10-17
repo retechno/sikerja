@@ -13,11 +13,20 @@ vi.mock('@/api', async (orig) => {
 
 const wk = (start: string, end: string) =>
   [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start_time: start, end_time: end }))
-const A: WorkSchedule = { id: 1, name: 'Jam kantor', is_default: true, days: wk('08:00', '17:00') }
+const A: WorkSchedule = {
+  id: 1,
+  name: 'Jam kantor',
+  is_default: true,
+  break_start: '12:00',
+  break_end: '13:00',
+  days: wk('08:00', '17:00'),
+}
 const B: WorkSchedule = {
   id: 2,
   name: 'Shift Sabtu',
   is_default: false,
+  break_start: '12:00',
+  break_end: '13:00',
   days: [...wk('09:00', '17:00'), { weekday: 6, start_time: '09:00', end_time: '15:00' }],
 }
 
@@ -52,8 +61,9 @@ describe('Pengaturan → Jam kerja (H-16)', () => {
   it('menampilkan ringkasan hari & jam kerja tiap jadwal, default diberi label', async () => {
     const w = await mountTab()
     const rows = w.findAll('[data-testid="summary"]').map((r) => r.text())
-    expect(rows[0]).toBe('Sen–Jum 08:00–17:00')
-    expect(rows[1]).toBe('Sen–Jum 09:00–17:00 · Sab 09:00–15:00')
+    expect(rows[0]).toContain('Sen–Jum 08:00–17:00')
+    expect(rows[0]).toContain('istirahat 12:00–13:00')
+    expect(rows[1]).toContain('Sen–Jum 09:00–17:00 · Sab 09:00–15:00')
     expect(w.text()).toContain('default')
     // jadwal default tidak bisa dihapus dari antarmuka
     expect(w.get('button[aria-label="Hapus Jam kantor"]').attributes('disabled')).toBeDefined()
@@ -81,6 +91,25 @@ describe('Pengaturan → Jam kerja (H-16)', () => {
       end_time: '15:00',
     })
     expect(w.emitted('changed')).toBeTruthy()
+    w.unmount()
+  })
+
+  it('istirahat bawaan 12:00–13:00 dikirim; sebagian terisi atau terbalik ditolak', async () => {
+    const w = await mountTab()
+    await w.get('[data-testid="add-schedule"]').trigger('click')
+    await flushPromises()
+    expect(doc().querySelector<HTMLInputElement>('[data-testid="break-start"]')!.value).toBe('12:00')
+    await fill('[data-testid="s-name"]', 'Shift CS')
+    await fill('[data-testid="break-end"]', '')
+    await click('[data-testid="s-save"]')
+    expect(doc().textContent).toContain('Isi jam mulai dan selesai istirahat')
+    await fill('[data-testid="break-end"]', '11:00')
+    await click('[data-testid="s-save"]')
+    expect(doc().textContent).toContain('Jam selesai istirahat harus setelah jam mulai')
+    expect(api.save).not.toHaveBeenCalled()
+    await fill('[data-testid="break-end"]', '13:00')
+    await click('[data-testid="s-save"]')
+    expect(api.save.mock.calls[0]![1]).toMatchObject({ break_start: '12:00', break_end: '13:00' })
     w.unmount()
   })
 

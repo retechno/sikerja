@@ -67,12 +67,16 @@ export function workingDays(
     days,
     half_day: false,
     schedule: 'Jam kantor (Sen-Jum 08.00-17.00)',
+    break: '12:00–13:00',
+    morning: '08:00–12:00',
+    afternoon: '13:00–17:00',
     calendar_days: dates.length,
     breakdown: dates.map((date) => ({
       date,
       weekday: 'Sen',
       counted: !skipped.some((s) => s.date === date),
       hours: skipped.some((s) => s.date === date) ? undefined : '08:00–17:00',
+      minutes: skipped.some((s) => s.date === date) ? undefined : 480,
     })),
     skipped,
   }

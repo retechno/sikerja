@@ -390,6 +390,7 @@ func resolvePartial(sch Schedule, date time.Time, sp PartialSpec) (*Partial, str
 	if !works {
 		return nil, "", fieldErr("Izin sebagian hari hanya bisa pada hari kerja", "start_date")
 	}
+	me, as := sch.Halves(h)
 	var p Partial
 	if strings.TrimSpace(sp.Start) != "" || strings.TrimSpace(sp.End) != "" {
 		a, e1 := parseHM(sp.Start)
@@ -404,9 +405,9 @@ func resolvePartial(sch Schedule, date time.Time, sp PartialSpec) (*Partial, str
 	} else {
 		switch sp.Session {
 		case model.SessionAfternoon:
-			p = Partial{From: h.Mid(), To: h.End}
+			p = Partial{From: as, To: h.End}
 		case model.SessionMorning, "":
-			p = Partial{From: h.Start, To: h.Mid()}
+			p = Partial{From: h.Start, To: me}
 		default:
 			return nil, "", fieldErr("Sesi harus pagi atau siang", "half_session")
 		}
@@ -416,16 +417,16 @@ func resolvePartial(sch Schedule, date time.Time, sp PartialSpec) (*Partial, str
 		return nil, "", fieldErr("Jam selesai harus setelah jam mulai", "end_time")
 	case p.From < h.Start || p.To > h.End:
 		return nil, "", fieldErr(fmt.Sprintf("Jam di luar jam kerja hari itu (%s)", h), "start_time")
-	case p.Minutes() < 15:
-		return nil, "", fieldErr("Izin sebagian hari minimal 15 menit", "end_time")
+	case sch.Net(p.From, p.To) < 15:
+		return nil, "", fieldErr("Izin sebagian hari minimal 15 menit di luar jam istirahat", "end_time")
 	case p.From == h.Start && p.To == h.End:
 		return nil, "", fieldErr("Seluruh jam kerja hari itu: ajukan sebagai satu hari penuh", "end_time")
 	}
 	session := ""
 	switch {
-	case p.From == h.Start && p.To == h.Mid():
+	case p.From == h.Start && p.To == me:
 		session = model.SessionMorning
-	case p.From == h.Mid() && p.To == h.End:
+	case p.From == as && p.To == h.End:
 		session = model.SessionAfternoon
 	}
 	return &p, session, nil
@@ -447,10 +448,11 @@ func partialOf(l *model.LeaveRequest, sch Schedule) (Partial, bool) {
 	if !ok || l.HalfSession == nil {
 		return Partial{}, false
 	}
+	me, as := sch.Halves(h)
 	if *l.HalfSession == model.SessionAfternoon {
-		return Partial{From: h.Mid(), To: h.End}, true
+		return Partial{From: as, To: h.End}, true
 	}
-	return Partial{From: h.Start, To: h.Mid()}, true
+	return Partial{From: h.Start, To: me}, true
 }
 
 // Preview menghitung hari kerja secara live untuk form H-08 beserta alur persetujuan dan dampak ke saldo.
