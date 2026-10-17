@@ -259,7 +259,7 @@ func (s *LeaveService) detailView(r repository.Repos, a Actor, l *model.LeaveReq
 	}
 	if l.LeaveType != nil && trackedType(l.LeaveType) {
 		year := DateOnly(l.StartDate).Year()
-		bal, err := r.Balances.Ensure(l.EmployeeID, l.LeaveTypeID, year, *l.LeaveType.AnnualQuota)
+		bal, err := ensureBalance(r, l.EmployeeID, l.LeaveType, year)
 		if err != nil {
 			return nil, err
 		}
@@ -325,7 +325,7 @@ func (s *LeaveService) balances(r repository.Repos, e *model.Employee, year int)
 		}
 		bv := BalanceView{LeaveType: t, Year: year, Pending: pending}
 		if trackedType(&t) {
-			bal, err := r.Balances.Ensure(e.ID, t.ID, year, *t.AnnualQuota)
+			bal, err := ensureBalance(r, e.ID, &t, year)
 			if err != nil {
 				return nil, err
 			}
@@ -486,7 +486,7 @@ func (s *LeaveService) Preview(a Actor, typeID uint64, start, end time.Time, sp 
 		t, err := r.LeaveTypes.ByID(typeID)
 		if err == nil && trackedType(t) {
 			year := DateOnly(start).Year()
-			bal, err := r.Balances.Ensure(emp.ID, t.ID, year, *t.AnnualQuota)
+			bal, err := ensureBalance(r, emp.ID, t, year)
 			if err != nil {
 				return nil, err
 			}
@@ -657,7 +657,7 @@ func (s *LeaveService) Submit(ctx context.Context, a Actor, in LeaveInput) (*Lea
 		}
 		if trackedType(t) {
 			year := start.Year()
-			if _, err := r.Balances.Ensure(emp.ID, t.ID, year, *t.AnnualQuota); err != nil {
+			if _, err := ensureBalance(r, emp.ID, t, year); err != nil {
 				return err
 			}
 			bal, err := r.Balances.Lock(emp.ID, t.ID, year)
@@ -1043,7 +1043,7 @@ func (s *LeaveService) deduct(r repository.Repos, l *model.LeaveRequest) error {
 		return nil
 	}
 	year := DateOnly(l.StartDate).Year()
-	if _, err := r.Balances.Ensure(l.EmployeeID, t.ID, year, *t.AnnualQuota); err != nil {
+	if _, err := ensureBalance(r, l.EmployeeID, t, year); err != nil {
 		return err
 	}
 	bal, err := r.Balances.Lock(l.EmployeeID, t.ID, year)

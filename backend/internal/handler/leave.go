@@ -412,3 +412,25 @@ func (h *H) leaveCalendar(c *gin.Context) {
 	}
 	ok(c, v)
 }
+
+func (h *H) leavePolicy(c *gin.Context) {
+	v, err := h.LeaveTypes.Policy(actor(c))
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	ok(c, v)
+}
+
+func (h *H) setLeavePolicy(c *gin.Context) {
+	var b service.LeavePolicy
+	if !h.bind(c, &b) {
+		return
+	}
+	v, err := h.LeaveTypes.SetPolicy(actor(c), b)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	ok(c, v)
+}

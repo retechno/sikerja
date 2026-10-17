@@ -69,6 +69,8 @@ type BalanceRepo interface {
 	List(employeeID uint64, year int) ([]model.LeaveBalance, error)
 	// Ensure membuat baris saldo bila belum ada (aman dipanggil bersamaan) lalu mengembalikannya.
 	Ensure(employeeID, typeID uint64, year int, quota decimal.Decimal) (*model.LeaveBalance, error)
+	// Find membaca satu saldo; ErrNotFound bila barisnya belum dibuat.
+	Find(employeeID, typeID uint64, year int) (*model.LeaveBalance, error)
 	// Lock membaca saldo dengan SELECT ... FOR UPDATE; hanya bermakna di dalam transaksi.
 	Lock(employeeID, typeID uint64, year int) (*model.LeaveBalance, error)
 	Save(b *model.LeaveBalance) error
@@ -89,6 +91,15 @@ func (r *balanceRepo) Ensure(employeeID, typeID uint64, year int, quota decimal.
 	if err := r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&row).Error; err != nil {
 		return nil, err
 	}
+	var b model.LeaveBalance
+	err := r.db.Where("employee_id = ? AND leave_type_id = ? AND year = ?", employeeID, typeID, year).First(&b).Error
+	if err != nil {
+		return nil, notFound(err)
+	}
+	return &b, nil
+}
+
+func (r *balanceRepo) Find(employeeID, typeID uint64, year int) (*model.LeaveBalance, error) {
 	var b model.LeaveBalance
 	err := r.db.Where("employee_id = ? AND leave_type_id = ? AND year = ?", employeeID, typeID, year).First(&b).Error
 	if err != nil {

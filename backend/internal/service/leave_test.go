@@ -14,6 +14,7 @@ import (
 
 	"github.com/retechno/sikerja/backend/internal/apperr"
 	"github.com/retechno/sikerja/backend/internal/model"
+	"github.com/retechno/sikerja/backend/internal/repository"
 	"github.com/retechno/sikerja/backend/internal/service"
 	"github.com/retechno/sikerja/backend/internal/storage"
 	"github.com/retechno/sikerja/backend/internal/testutil"
@@ -1080,4 +1081,96 @@ func TestSubstitutesAndLastStageFlag(t *testing.T) {
 	hv, err := e.svc.Get(e.w.Actor(e.w.MgrIT), h.ID)
 	require.NoError(t, err)
 	assert.True(t, hv.IsLastStage, "setengah hari: persetujuan atasan sudah final")
+}
+
+func TestCarryOverIsOffByDefaultAndConfigurable(t *testing.T) {
+	e := newLeaveEnv(t)
+	hr, emp := e.w.Actor(e.w.HR), e.w.EmpIT1
+	// tahun lalu: kuota 12, terpakai 5 → sisa 7
+	_, err := e.w.Store.R().Balances.Ensure(emp.ID, e.ct.ID, 2025, dd("12"))
+	require.NoError(t, err)
+	b, err := e.w.Store.R().Balances.Lock(emp.ID, e.ct.ID, 2025)
+	require.NoError(t, err)
+	b.Used = dd("5")
+	require.NoError(t, e.w.Store.R().Balances.Save(b))
+
+	quota := func(who *model.Employee, year int) decimal.Decimal {
+		bals, err := e.svc.Balances(e.w.Actor(who), 0, year)
+		require.NoError(t, err)
+		for _, v := range bals {
+			if v.LeaveType.ID == e.ct.ID {
+				return *v.Quota
+			}
+		}
+		t.Fatal("saldo cuti tahunan tidak ditemukan")
+		return decimal.Zero
+	}
+
+	assert.True(t, quota(emp, 2026).Equal(dd("12")), "default: sisa tahun lalu hangus")
+
+	p, err := e.types.Policy(hr)
+	require.NoError(t, err)
+	assert.False(t, p.CarryOver)
+	_, err = e.types.SetPolicy(e.w.Actor(emp), service.LeavePolicy{CarryOver: true})
+	assert.Error(t, err, "hanya HR")
+
+	_, err = e.types.SetPolicy(hr, service.LeavePolicy{CarryOver: true})
+	require.NoError(t, err)
+	// karyawan lain dengan sisa 7 mendapat 12 + 7; saldo yang sudah ada tidak berubah
+	other := e.w.EmpIT2
+	_, err = e.w.Store.R().Balances.Ensure(other.ID, e.ct.ID, 2025, dd("12"))
+	require.NoError(t, err)
+	ob, err := e.w.Store.R().Balances.Lock(other.ID, e.ct.ID, 2025)
+	require.NoError(t, err)
+	ob.Used = dd("5")
+	require.NoError(t, e.w.Store.R().Balances.Save(ob))
+	assert.True(t, quota(other, 2026).Equal(dd("19")), "carry over: 12 + sisa 7")
+	assert.True(t, quota(emp, 2026).Equal(dd("12")), "saldo yang sudah dibuat tidak diubah")
+}
+
+func TestLeaveListsHaveConstantQueryCount(t *testing.T) {
+	e := newLeaveEnv(t)
+	w := e.w
+	queries := countQueries(w.DB)
+	addIT(t, w, 100, 12)
+	emps, _, err := w.Store.R().Employees.List(repository.EmployeeFilter{DepartmentID: w.ITS.ID, Page: repository.Page{Page: 1, PerPage: 100}})
+	require.NoError(t, err)
+
+	submitFor := func(from, to int) {
+		for _, emp := range emps[from:to] {
+			if emp.ID == w.MgrIT.ID {
+				continue
+			}
+			emp := emp
+			e.submit(t, &emp, e.input(e.iz, "2026-10-27", "2026-10-27"))
+		}
+	}
+	measure := func() map[string]int64 {
+		out := map[string]int64{}
+		for name, fn := range map[string]func() error{
+			"queue":    func() error { _, err := e.svc.Queue(w.Actor(w.MgrIT), "pending"); return err },
+			"hr_queue": func() error { _, err := e.svc.Queue(w.Actor(w.HR), "pending"); return err },
+			"summary":  func() error { _, err := e.svc.Summary(w.Actor(w.MgrIT)); return err },
+			"calendar": func() error { _, err := e.svc.Calendar(w.Actor(w.HR), day("2026-10-01"), 0, true); return err },
+			"history": func() error {
+				_, _, err := e.svc.List(w.Actor(w.HR), service.LeaveListFilter{})
+				return err
+			},
+		} {
+			before := queries()
+			require.NoError(t, fn(), name)
+			out[name] = queries() - before
+		}
+		return out
+	}
+
+	submitFor(0, 4)
+	measure() // pemanasan: saldo dibuat saat pertama dibaca
+	few := measure()
+	submitFor(4, len(emps))
+	measure()
+	many := measure()
+	for name, n := range few {
+		assert.Equal(t, n, many[name], "%s: jumlah query tidak boleh bertambah mengikuti jumlah pengajuan (N+1)", name)
+	}
 }
