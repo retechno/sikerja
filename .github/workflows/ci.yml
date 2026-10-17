@@ -105,13 +105,13 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: api
         uses: docker/build-push-action@v6
-        with: { context: ./backend, target: api, push: false, cache-from: type=gha,scope=api, cache-to: "type=gha,scope=api,mode=max" }
+        with: { context: ./backend, target: api, push: false, cache-from: "type=gha,scope=api", cache-to: "type=gha,scope=api,mode=max" }
       - name: worker
         uses: docker/build-push-action@v6
-        with: { context: ./backend, target: worker, push: false, cache-from: type=gha,scope=worker, cache-to: "type=gha,scope=worker,mode=max" }
+        with: { context: ./backend, target: worker, push: false, cache-from: "type=gha,scope=worker", cache-to: "type=gha,scope=worker,mode=max" }
       - name: web
         uses: docker/build-push-action@v6
-        with: { context: ./frontend, target: web, push: false, cache-from: type=gha,scope=web, cache-to: "type=gha,scope=web,mode=max" }
+        with: { context: ./frontend, target: web, push: false, cache-from: "type=gha,scope=web", cache-to: "type=gha,scope=web,mode=max" }
       - name: compose produksi valid
         run: |
           cp .env.production.example .env
