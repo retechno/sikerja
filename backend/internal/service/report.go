@@ -40,6 +40,7 @@ type ReportRow struct {
 	BehaviorScore *decimal.Decimal `json:"behavior_score"`
 	FinalScore    *decimal.Decimal `json:"final_score"`
 	Grade         string           `json:"grade"`
+	Appraiser     string           `json:"appraiser"` // atasan penilai; terisi setelah penilaian dikirim
 	Status        string           `json:"status"`
 }
 
@@ -116,6 +117,9 @@ func (s *ReportService) Build(a Actor, periodID, deptID uint64) (*ReportView, er
 			if x.Grade != nil {
 				row.Grade = *x.Grade
 			}
+			if x.AppraiserName != nil {
+				row.Appraiser = *x.AppraiserName
+			}
 		}
 		if row.FinalScore != nil {
 			v.Summary.Scored++
@@ -166,11 +170,11 @@ func (s *ReportService) ExportXLSX(a Actor, periodID, deptID uint64) ([]byte, st
 	title, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 14}})
 	_ = f.SetCellStyle(sh, "A1", "A1", title)
 
-	head := []any{"No", "NIK", "Nama", "Departemen", "Jabatan", "Skor KPI", "Skor Perilaku", "Skor Akhir", "Predikat", "Status"}
+	head := []any{"No", "NIK", "Nama", "Departemen", "Jabatan", "Skor KPI", "Skor Perilaku", "Skor Akhir", "Predikat", "Penilai", "Status"}
 	_ = f.SetSheetRow(sh, "A4", &head)
 	hs, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Color: "FFFFFF"},
 		Fill: excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"0E5A52"}}})
-	_ = f.SetCellStyle(sh, "A4", "J4", hs)
+	_ = f.SetCellStyle(sh, "A4", "K4", hs)
 	num, _ := f.NewStyle(&excelize.Style{NumFmt: 2}) // 0.00
 	numOrDash := func(d *decimal.Decimal) any {
 		if d == nil {
@@ -180,7 +184,7 @@ func (s *ReportService) ExportXLSX(a Actor, periodID, deptID uint64) ([]byte, st
 		return fl
 	}
 	for i, r := range v.Rows {
-		line := []any{i + 1, r.NIK, r.Name, r.Department, r.Position, numOrDash(r.KpiScore), numOrDash(r.BehaviorScore), numOrDash(r.FinalScore), orDash(r.Grade), r.Status}
+		line := []any{i + 1, r.NIK, r.Name, r.Department, r.Position, numOrDash(r.KpiScore), numOrDash(r.BehaviorScore), numOrDash(r.FinalScore), orDash(r.Grade), orDash(r.Appraiser), r.Status}
 		_ = f.SetSheetRow(sh, fmt.Sprintf("A%d", 5+i), &line)
 	}
 	if n := len(v.Rows); n > 0 {
@@ -198,6 +202,7 @@ func (s *ReportService) ExportXLSX(a Actor, periodID, deptID uint64) ([]byte, st
 	_ = f.SetColWidth(sh, "C", "E", 26)
 	_ = f.SetColWidth(sh, "F", "I", 15)
 	_ = f.SetColWidth(sh, "J", "J", 24)
+	_ = f.SetColWidth(sh, "K", "K", 24)
 	_ = f.SetPanes(sh, &excelize.Panes{Freeze: true, YSplit: 4, TopLeftCell: "A5", ActivePane: "bottomLeft"})
 
 	var buf bytes.Buffer
