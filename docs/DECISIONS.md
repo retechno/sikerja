@@ -168,3 +168,25 @@ Format: **keputusan** — alasan.
 **Seeder**: `go run ./cmd/seed` pada database Rilis 1 yang sudah terisi kini hanya menambahkan data izin & cuti (`EnsureLeave`) bila
 belum ada. Contoh pengajuan Rina Wulandari dibuat relatif terhadap hari ini agar angkanya sama dengan mockup (cuti tahunan 2
 terpakai + 2 menunggu, izin 1,5, sakit 2) saat dijalankan sekitar Okt 2026.
+
+## Tambahan (jadwal kerja & izin per jam)
+
+Permintaan: hari kerja bisa termasuk Sabtu dan ada hitungan jam (Sen–Jum 08.00–17.00; Sen–Jum 09.00–17.00 + Sabtu 09.00–15.00),
+diatur per departemen, shift untuk CS menyusul. Jawaban pemilik produk: jadwal **per departemen**; izin sebagian hari = **jam kerja hari itu
+sebagai penyebut** (saldo tetap dalam hari).
+
+- **Tabel `work_schedules` + `work_schedule_days`** (weekday 0 = Minggu … 6 = Sabtu, jam mulai/selesai; hari tanpa baris = libur mingguan) dan
+  `departments.schedule_id` (NULL = jadwal default). Migrasi 000003 langsung mengisi dua jadwal bawaan: **"Jam kantor" (Sen–Jum 08.00–17.00, default)**
+  dan **"Jam kantor + Sabtu" (Sen–Jum 09.00–17.00, Sab 09.00–15.00)**. **Saya tidak menebak departemen mana yang memakai jadwal kedua** — semua departemen
+  tetap di jadwal default sampai HR memasangnya di H-16 → Departemen & jabatan → Jadwal kerja. Tab "Jam kerja" untuk membuat/ubah jadwal; shift CS kelak
+  cukup berupa jadwal baru yang dipasang ke departemen CS.
+- **Hari kerja mengikuti jadwal departemen pengaju** (HR/Direktur tanpa departemen memakai jadwal default). Sabtu terhitung 1 hari kerja hanya bila jadwalnya memuat
+  Sabtu; hari libur nasional/cuti bersama tetap tidak dihitung. Satu titik penentu (`scheduleFor`) sehingga jadwal per karyawan/shift bisa ditambah tanpa mengubah
+  pemanggil. Mengubah jadwal **tidak menghitung ulang** pengajuan yang sudah ada.
+- **Izin sebagian hari = jam mulai–selesai** pada satu hari kerja, di dalam jam kerja hari itu: `hari = lama izin ÷ jam kerja hari itu`, dibulatkan 2 desimal
+  (08.00–10.00 dari 9 jam = 0,22; Sabtu 09.00–12.00 dari 6 jam = 0,5). Jam istirahat **tidak** dikurangkan dari penyebut (jam kerja = selesai − mulai).
+  Tombol "Paruh pagi/siang" mengisi separuh jam kerja hari itu. Minimal 15 menit; seluruh jam kerja ditolak (ajukan sebagai satu hari penuh). Hanya jenis dengan
+  "boleh setengah hari" (Izin) yang bisa sebagian hari. Dua izin di tanggal sama boleh bila jamnya tidak beririsan. Tetap satu tahap persetujuan (atasan langsung).
+- Kolom saldo/hari dilebarkan ke `DECIMAL(6,2)` (sebelumnya 1 desimal) agar 0,22 tersimpan; `leave_requests.start_time/end_time` tambahan, `half_session`
+  hanya terisi bila rentang tepat paruh pertama/kedua. Data lama (hanya sesi) tetap terbaca.
+- Konsekuensi: saldo izin bisa berpecahan (mis. 0,22); tampilan memakai koma dan hingga 2 desimal.

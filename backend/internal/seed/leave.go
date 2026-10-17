@@ -126,6 +126,10 @@ func seedLeave(r repository.Repos, now time.Time) error {
 		}
 	}
 
+	if err := ensureSchedules(r); err != nil {
+		return err
+	}
+
 	types := map[string]*model.LeaveType{}
 	for i := range leaveTypes {
 		t := leaveTypes[i]
@@ -174,6 +178,12 @@ func seedLeave(r repository.Repos, now time.Time) error {
 		if ev.Half {
 			s := ev.Session
 			l.HalfSession = &s
+			// jadwal default 08.00–17.00: pagi = 08.00–12.30, siang = 12.30–17.00
+			from, to := "08:00", "12:30"
+			if ev.Session == model.SessionAfternoon {
+				from, to = "12:30", "17:00"
+			}
+			l.StartTime, l.EndTime = &from, &to
 		}
 		if ev.Substitute != "" && byName[ev.Substitute] != nil {
 			l.SubstituteID = &byName[ev.Substitute].ID
@@ -274,4 +284,31 @@ func spanEnd(start time.Time, n int, hol map[string]string) time.Time {
 		}
 	}
 	return d
+}
+
+// ensureSchedules membuat dua jadwal bawaan bila belum ada (di MySQL sudah diisi oleh migrasi 000003).
+// "Jam kantor" (Sen–Jum 08.00–17.00) menjadi default. Jadwal kedua (Sen–Jum 09.00–17.00, Sab 09.00–15.00)
+// disediakan untuk dipasang HR ke departemen yang bekerja pada hari Sabtu (mis. Customer Service) — penentuannya
+// sengaja tidak ditebak oleh seeder.
+func ensureSchedules(r repository.Repos) error {
+	if _, err := r.Schedules.Default(); err == nil {
+		return nil
+	} else if err != repository.ErrNotFound {
+		return err
+	}
+	mk := func(name string, def bool, start, satEnd string) error {
+		m := &model.WorkSchedule{Name: name, IsDefault: def}
+		for wd := 1; wd <= 5; wd++ {
+			end := "17:00"
+			m.Days = append(m.Days, model.WorkScheduleDay{Weekday: wd, StartTime: start, EndTime: end})
+		}
+		if satEnd != "" {
+			m.Days = append(m.Days, model.WorkScheduleDay{Weekday: 6, StartTime: start, EndTime: satEnd})
+		}
+		return r.Schedules.Save(m)
+	}
+	if err := mk("Jam kantor (Sen-Jum 08.00-17.00)", true, "08:00", ""); err != nil {
+		return err
+	}
+	return mk("Jam kantor + Sabtu (Sen-Jum 09.00-17.00, Sab 09.00-15.00)", false, "09:00", "15:00")
 }

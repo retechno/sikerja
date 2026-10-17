@@ -187,20 +187,20 @@ func TestCountWorkingDaysBreakdown(t *testing.T) {
 func TestWorkingDayServiceUsesHolidayTable(t *testing.T) {
 	e := newLeaveEnv(t)
 	wd := service.NewWorkingDayService(e.w.Store)
-	before, err := wd.Preview(day("2026-10-26"), day("2026-10-30"), false)
+	before, err := wd.Preview(service.DefaultSchedule, day("2026-10-26"), day("2026-10-30"), nil)
 	require.NoError(t, err)
 	assert.True(t, before.Days.Equal(dd("5")))
 
 	e.holiday(t, "2026-10-28", "Libur contoh")
-	after, err := wd.Preview(day("2026-10-26"), day("2026-10-30"), false)
+	after, err := wd.Preview(service.DefaultSchedule, day("2026-10-26"), day("2026-10-30"), nil)
 	require.NoError(t, err)
 	assert.True(t, after.Days.Equal(dd("4")))
 
-	_, err = wd.Preview(day("2026-10-30"), day("2026-10-26"), false)
+	_, err = wd.Preview(service.DefaultSchedule, day("2026-10-30"), day("2026-10-26"), nil)
 	assert.Equal(t, 422, status(t, err), "tanggal terbalik")
-	_, err = wd.Preview(day("2026-10-26"), day("2026-10-27"), true)
+	_, err = wd.Preview(service.DefaultSchedule, day("2026-10-26"), day("2026-10-27"), &service.Partial{From: 480, To: 600})
 	assert.Equal(t, 422, status(t, err), "setengah hari > 1 tanggal")
-	_, err = wd.Preview(day("2026-01-01"), day("2027-12-31"), false)
+	_, err = wd.Preview(service.DefaultSchedule, day("2026-01-01"), day("2027-12-31"), nil)
 	assert.Equal(t, 422, status(t, err), "rentang terlalu panjang")
 }
 
@@ -829,7 +829,7 @@ func TestHolidayAdminAndImport(t *testing.T) {
 	assert.Equal(t, 422, status(t, err), "tanggal kembar")
 
 	// libur baru langsung memengaruhi hitung hari kerja
-	pv, err := e.svc.Preview(emp, e.ct.ID, day("2026-11-19"), day("2026-11-23"), false)
+	pv, err := e.svc.Preview(emp, e.ct.ID, day("2026-11-19"), day("2026-11-23"), service.PartialSpec{})
 	require.NoError(t, err)
 	assert.True(t, pv.WorkingDays.Days.Equal(dd("2")), "Kam, (Jum libur), Sen")
 
@@ -856,7 +856,7 @@ func TestHolidayAdminAndImport(t *testing.T) {
 func TestPreviewWarnsAboutBalanceAndOverlap(t *testing.T) {
 	e := newLeaveEnv(t)
 	rina := e.w.Actor(e.w.EmpIT1)
-	pv, err := e.svc.Preview(rina, e.ct.ID, day("2026-11-02"), day("2026-11-04"), false)
+	pv, err := e.svc.Preview(rina, e.ct.ID, day("2026-11-02"), day("2026-11-04"), service.PartialSpec{})
 	require.NoError(t, err)
 	assert.True(t, pv.WorkingDays.Days.Equal(dd("3")))
 	require.NotNil(t, pv.Balance)
@@ -868,12 +868,12 @@ func TestPreviewWarnsAboutBalanceAndOverlap(t *testing.T) {
 	assert.Equal(t, []string{e.w.HR.Name}, pv.Flow[1].Names)
 
 	e.submit(t, e.w.EmpIT1, e.input(e.ct, "2026-11-03", "2026-11-03"))
-	pv, err = e.svc.Preview(rina, e.ct.ID, day("2026-11-02"), day("2026-11-04"), false)
+	pv, err = e.svc.Preview(rina, e.ct.ID, day("2026-11-02"), day("2026-11-04"), service.PartialSpec{})
 	require.NoError(t, err)
 	assert.NotEmpty(t, pv.Warnings, "tumpang tindih diberitahu sebelum dikirim")
 
 	// setengah hari hanya satu tahap
-	half, err := e.svc.Preview(rina, e.iz.ID, day("2026-11-05"), day("2026-11-05"), true)
+	half, err := e.svc.Preview(rina, e.iz.ID, day("2026-11-05"), day("2026-11-05"), service.PartialSpec{Half: true})
 	require.NoError(t, err)
 	assert.Len(t, half.Flow, 1)
 }

@@ -66,11 +66,13 @@ export function workingDays(
   return {
     days,
     half_day: false,
+    schedule: 'Jam kantor (Sen-Jum 08.00-17.00)',
     calendar_days: dates.length,
     breakdown: dates.map((date) => ({
       date,
       weekday: 'Sen',
       counted: !skipped.some((s) => s.date === date),
+      hours: skipped.some((s) => s.date === date) ? undefined : '08:00–17:00',
     })),
     skipped,
   }
@@ -101,6 +103,8 @@ export function makeLeave(over: Partial<LeaveRequest> = {}): LeaveRequest {
     end_date: '2026-11-02T00:00:00Z',
     half_day: false,
     half_session: null,
+    start_time: null,
+    end_time: null,
     days: '2',
     reason: 'Menghadiri wisuda adik di Malang',
     substitute: null,

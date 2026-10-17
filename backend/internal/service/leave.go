@@ -246,8 +246,16 @@ func (s *LeaveService) detailView(r repository.Repos, a Actor, l *model.LeaveReq
 		return nil, err
 	}
 	v.Timeline = tl
-	if wd, err := s.wd.Count(r, l.StartDate, l.EndDate, l.HalfDay); err == nil {
-		v.Skipped = wd.Skipped
+	if sch, err := scheduleFor(r, l.Employee); err == nil {
+		var part *Partial
+		if l.HalfDay {
+			if pr, ok := partialOf(l, sch); ok {
+				part = &pr
+			}
+		}
+		if wd, err := s.wd.Count(r, sch, l.StartDate, l.EndDate, part); err == nil {
+			v.Skipped = wd.Skipped
+		}
 	}
 	if l.LeaveType != nil && trackedType(l.LeaveType) {
 		year := DateOnly(l.StartDate).Year()
@@ -364,23 +372,112 @@ type LeavePreview struct {
 	Warnings    []string     `json:"warnings"`
 }
 
+// PartialSpec menyatakan izin sebagian hari: pilih sesi (pagi/siang) atau isi jam mulai–selesai ("HH:MM").
+type PartialSpec struct {
+	Half    bool
+	Session string
+	Start   string
+	End     string
+}
+
+// resolvePartial menerjemahkan spec menjadi rentang jam pada hari date menurut jadwal sch.
+// Mengembalikan (nil, "", nil) bila bukan izin sebagian hari; session terisi bila rentangnya tepat setengah hari pertama/kedua.
+func resolvePartial(sch Schedule, date time.Time, sp PartialSpec) (*Partial, string, error) {
+	if !sp.Half {
+		return nil, "", nil
+	}
+	h, works := sch.Hours(date.Weekday())
+	if !works {
+		return nil, "", fieldErr("Izin sebagian hari hanya bisa pada hari kerja", "start_date")
+	}
+	var p Partial
+	if strings.TrimSpace(sp.Start) != "" || strings.TrimSpace(sp.End) != "" {
+		a, e1 := parseHM(sp.Start)
+		b, e2 := parseHM(sp.End)
+		if e1 != nil {
+			return nil, "", fieldErr("Jam mulai harus berformat HH:MM", "start_time")
+		}
+		if e2 != nil {
+			return nil, "", fieldErr("Jam selesai harus berformat HH:MM", "end_time")
+		}
+		p = Partial{From: a, To: b}
+	} else {
+		switch sp.Session {
+		case model.SessionAfternoon:
+			p = Partial{From: h.Mid(), To: h.End}
+		case model.SessionMorning, "":
+			p = Partial{From: h.Start, To: h.Mid()}
+		default:
+			return nil, "", fieldErr("Sesi harus pagi atau siang", "half_session")
+		}
+	}
+	switch {
+	case p.To <= p.From:
+		return nil, "", fieldErr("Jam selesai harus setelah jam mulai", "end_time")
+	case p.From < h.Start || p.To > h.End:
+		return nil, "", fieldErr(fmt.Sprintf("Jam di luar jam kerja hari itu (%s)", h), "start_time")
+	case p.Minutes() < 15:
+		return nil, "", fieldErr("Izin sebagian hari minimal 15 menit", "end_time")
+	case p.From == h.Start && p.To == h.End:
+		return nil, "", fieldErr("Seluruh jam kerja hari itu: ajukan sebagai satu hari penuh", "end_time")
+	}
+	session := ""
+	switch {
+	case p.From == h.Start && p.To == h.Mid():
+		session = model.SessionMorning
+	case p.From == h.Mid() && p.To == h.End:
+		session = model.SessionAfternoon
+	}
+	return &p, session, nil
+}
+
+// partialOf membaca rentang jam sebuah pengajuan sebagian hari (jam tersimpan, atau turunan dari sesi untuk data lama).
+func partialOf(l *model.LeaveRequest, sch Schedule) (Partial, bool) {
+	if !l.HalfDay {
+		return Partial{}, false
+	}
+	if l.StartTime != nil && l.EndTime != nil {
+		a, e1 := parseHM(*l.StartTime)
+		b, e2 := parseHM(*l.EndTime)
+		if e1 == nil && e2 == nil {
+			return Partial{From: a, To: b}, true
+		}
+	}
+	h, ok := sch.Hours(DateOnly(l.StartDate).Weekday())
+	if !ok || l.HalfSession == nil {
+		return Partial{}, false
+	}
+	if *l.HalfSession == model.SessionAfternoon {
+		return Partial{From: h.Mid(), To: h.End}, true
+	}
+	return Partial{From: h.Start, To: h.Mid()}, true
+}
+
 // Preview menghitung hari kerja secara live untuk form H-08 beserta alur persetujuan dan dampak ke saldo.
-func (s *LeaveService) Preview(a Actor, typeID uint64, start, end time.Time, half bool) (*LeavePreview, error) {
+func (s *LeaveService) Preview(a Actor, typeID uint64, start, end time.Time, sp PartialSpec) (*LeavePreview, error) {
 	r := s.store.R()
 	emp, err := loadEmployee(r, a.EmployeeID)
 	if err != nil {
 		return nil, err
 	}
-	wd, err := s.wd.Count(r, start, end, half)
+	sch, err := scheduleFor(r, emp)
 	if err != nil {
 		return nil, err
 	}
-	flow, err := flowFor(r, emp, half)
+	part, _, err := resolvePartial(sch, DateOnly(start), sp)
+	if err != nil {
+		return nil, err
+	}
+	wd, err := s.wd.Count(r, sch, start, end, part)
+	if err != nil {
+		return nil, err
+	}
+	flow, err := flowFor(r, emp, sp.Half)
 	if err != nil {
 		return nil, err
 	}
 	p := &LeavePreview{WorkingDays: wd, Flow: flow, Warnings: []string{}}
-	if overlap, err := s.overlap(r, emp.ID, DateOnly(start), DateOnly(end), half, sessionOr(half, ""), 0); err == nil && overlap != "" {
+	if overlap, err := s.overlap(r, emp.ID, sch, DateOnly(start), DateOnly(end), part, 0); err == nil && overlap != "" {
 		p.Warnings = append(p.Warnings, overlap)
 	}
 	if typeID != 0 {
@@ -405,26 +502,18 @@ func (s *LeaveService) Preview(a Actor, typeID uint64, start, end time.Time, hal
 	return p, nil
 }
 
-func sessionOr(half bool, s string) string {
-	if !half {
-		return ""
-	}
-	if s == "" {
-		return model.SessionMorning
-	}
-	return s
-}
-
 // overlap mengembalikan pesan bila tanggal bertabrakan dengan pengajuan lain yang masih berlaku.
-// Dua izin setengah hari pada tanggal yang sama boleh asal sesinya berbeda (pagi/siang).
-func (s *LeaveService) overlap(r repository.Repos, empID uint64, start, end time.Time, half bool, session string, excludeID uint64) (string, error) {
+// Dua izin sebagian hari pada tanggal yang sama boleh asal jamnya tidak beririsan.
+func (s *LeaveService) overlap(r repository.Repos, empID uint64, sch Schedule, start, end time.Time, part *Partial, excludeID uint64) (string, error) {
 	others, err := r.Leaves.Overlapping(empID, start, end, excludeID)
 	if err != nil {
 		return "", err
 	}
 	for _, o := range others {
-		if half && o.HalfDay && o.HalfSession != nil && *o.HalfSession != session {
-			continue
+		if part != nil && o.HalfDay && DateOnly(o.StartDate).Equal(start) {
+			if or, ok := partialOf(&o, sch); ok && (part.To <= or.From || part.From >= or.To) {
+				continue
+			}
 		}
 		no := ""
 		if o.Number != nil {
@@ -441,6 +530,8 @@ type LeaveInput struct {
 	EndDate      time.Time
 	HalfDay      bool
 	HalfSession  string
+	StartTime    string // izin sebagian hari: jam mulai "HH:MM" (opsional bila HalfSession dipakai)
+	EndTime      string
 	Reason       string
 	SubstituteID *uint64
 	Filename     string
@@ -494,16 +585,20 @@ func (s *LeaveService) Submit(ctx context.Context, a Actor, in LeaveInput) (*Lea
 	}
 	half := in.HalfDay
 	if half && !t.AllowHalfDay {
-		return nil, fieldErr(t.Name+" tidak bisa diajukan setengah hari", "half_day")
-	}
-	session := sessionOr(half, in.HalfSession)
-	if half && session != model.SessionMorning && session != model.SessionAfternoon {
-		return nil, fieldErr("Sesi harus pagi atau siang", "half_session")
+		return nil, fieldErr(t.Name+" tidak bisa diajukan sebagian hari", "half_day")
 	}
 	if start.Before(s.today().AddDate(0, 0, -maxBackdateDays)) {
 		return nil, fieldErr(fmt.Sprintf("Tanggal mulai tidak boleh lebih dari %d hari ke belakang", maxBackdateDays), "start_date")
 	}
-	wd, err := s.wd.Count(r, start, end, half)
+	sch, err := scheduleFor(r, emp)
+	if err != nil {
+		return nil, err
+	}
+	part, session, err := resolvePartial(sch, start, PartialSpec{Half: half, Session: in.HalfSession, Start: in.StartTime, End: in.EndTime})
+	if err != nil {
+		return nil, err
+	}
+	wd, err := s.wd.Count(r, sch, start, end, part)
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +648,7 @@ func (s *LeaveService) Submit(ctx context.Context, a Actor, in LeaveInput) (*Lea
 	var savedPath string
 	var out *model.LeaveRequest
 	err = s.store.Tx(func(r repository.Repos) error {
-		if msg, err := s.overlap(r, emp.ID, start, end, half, session, 0); err != nil {
+		if msg, err := s.overlap(r, emp.ID, sch, start, end, part, 0); err != nil {
 			return err
 		} else if msg != "" {
 			return fieldErr(msg, "start_date")
@@ -581,8 +676,12 @@ func (s *LeaveService) Submit(ctx context.Context, a Actor, in LeaveInput) (*Lea
 			EmployeeID: emp.ID, LeaveTypeID: t.ID, StartDate: start, EndDate: end, HalfDay: half,
 			Days: days, Reason: reason, SubstituteID: in.SubstituteID, Status: firstStatus(emp, half),
 		}
-		if half {
-			l.HalfSession = &session
+		if part != nil {
+			st, et := fmtHM(part.From), fmtHM(part.To)
+			l.StartTime, l.EndTime = &st, &et
+			if session != "" {
+				l.HalfSession = &session
+			}
 		}
 		if data != nil {
 			rel, err := s.files.Save(filepath.ToSlash(filepath.Join("leave", itoa64(emp.ID))), ext, bytes.NewReader(data))
@@ -1110,6 +1209,8 @@ type CalendarItem struct {
 	EndDate        string `json:"end_date"`
 	HalfDay        bool   `json:"half_day"`
 	HalfSession    string `json:"half_session,omitempty"`
+	StartTime      string `json:"start_time,omitempty"`
+	EndTime        string `json:"end_time,omitempty"`
 	Status         string `json:"status"`
 	Days           string `json:"days"`
 }
@@ -1147,6 +1248,9 @@ func (s *LeaveService) Calendar(a Actor, month time.Time, deptID uint64, include
 			EndDate: DateOnly(l.EndDate).Format("2006-01-02"), HalfDay: l.HalfDay, Status: l.Status, Days: fmtDays(l.Days)}
 		if l.HalfSession != nil {
 			it.HalfSession = *l.HalfSession
+		}
+		if l.StartTime != nil && l.EndTime != nil {
+			it.StartTime, it.EndTime = *l.StartTime, *l.EndTime
 		}
 		if l.Employee != nil {
 			it.EmployeeName = l.Employee.Name

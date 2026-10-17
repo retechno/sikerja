@@ -61,7 +61,9 @@ function chipClass(i: CalendarItem): string {
   }
 }
 const chipText = (i: CalendarItem) =>
-  `${firstName(i.employee_name)} · ${KIND_LABEL[calendarKind(i.type_code)]}${i.half_day ? ' ½' : ''}`
+  `${firstName(i.employee_name)} · ${KIND_LABEL[calendarKind(i.type_code)]}${
+    i.half_day ? (i.start_time && i.end_time ? ` ${i.start_time}–${i.end_time}` : ' ½') : ''
+  }`
 const chipTitle = (i: CalendarItem) =>
   `${i.employee_name} — ${i.type_name}, ${fmtRange(i.start_date, i.end_date)}${
     i.status === 'approved' ? '' : ' (menunggu persetujuan)'
@@ -209,7 +211,9 @@ const outList = computed(() => {
           <div v-for="i in p.list" :key="i.id" class="mt-1 text-[13px]">
             <span class="font-semibold">{{ i.type_name }}</span>
             · {{ fmtRange(i.start_date, i.end_date)
-            }}<template v-if="i.half_day && i.half_session">, {{ i.half_session }}</template>
+            }}<template v-if="i.half_day && i.start_time && i.end_time"
+              >, {{ i.start_time }}–{{ i.end_time }}</template
+            ><template v-else-if="i.half_day && i.half_session">, {{ i.half_session }}</template>
             <span v-if="i.status !== 'approved'" class="badge b-warn ml-1 !py-0">menunggu</span>
           </div>
         </div>

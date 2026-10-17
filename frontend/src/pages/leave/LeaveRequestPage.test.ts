@@ -97,15 +97,52 @@ describe('LeaveRequestPage (H-08)', () => {
     expect(w.get('[data-testid="calc"]').text()).toContain('tidak boleh sebelum')
   })
 
-  it('izin: pilihan setengah hari muncul, tanggal selesai dikunci, dan dikirim half_day', async () => {
+  it('izin sebagian hari: input jam muncul, diisi paruh pagi dari jam kerja API, tanggal selesai dikunci', async () => {
     const w = await mountPage()
-    expect(w.text()).not.toContain('Setengah hari · pagi') // cuti tahunan tidak boleh setengah hari
+    expect(w.find('[data-testid="mode-partial"]').exists()).toBe(false) // cuti tahunan tidak boleh sebagian hari
     await w.get('[data-testid="type-IZ"]').trigger('click')
-    const half = w.findAll('button[role="radio"]').find((b) => b.text() === 'Setengah hari · pagi')!
-    await half.trigger('click')
+    await w.get('[data-testid="mode-partial"]').trigger('click')
     await tick()
+    // jam kerja 08:00–17:00 (dari rincian API) → paruh pagi 08:00–12:30
+    expect(w.get<HTMLInputElement>('[data-testid="from"]').element.value).toBe('08:00')
+    expect(w.get<HTMLInputElement>('[data-testid="to"]').element.value).toBe('12:30')
     expect(w.get('[data-testid="end"]').attributes('disabled')).toBeDefined()
-    expect(api.preview.mock.calls.at(-1)![0]).toMatchObject({ type_id: 3, half_day: true })
+    expect(w.get('[data-testid="partial-box"]').text()).toContain('Jam kerja hari itu 08:00–17:00')
+    await tick()
+    expect(api.preview.mock.calls.at(-1)![0]).toMatchObject({
+      type_id: 3,
+      half_day: true,
+      start_time: '08:00',
+      end_time: '12:30',
+    })
+
+    await w.get('[data-testid="quick-siang"]').trigger('click')
+    expect((w.get('[data-testid="from"]').element as HTMLInputElement).value).toBe('12:30')
+    expect((w.get('[data-testid="to"]').element as HTMLInputElement).value).toBe('17:00')
+  })
+
+  it('izin 2 jam: jam dikirim ke API dan ringkasan jam dari hari kerja ditampilkan', async () => {
+    api.preview.mockResolvedValue(
+      makePreview({
+        working_days: {
+          ...workingDays('0.22', ['2026-11-23']),
+          half_day: true,
+          partial_minutes: 120,
+          day_minutes: 540,
+        },
+      }),
+    )
+    const w = await mountPage()
+    await w.get('[data-testid="type-IZ"]').trigger('click')
+    await w.get('[data-testid="mode-partial"]').trigger('click')
+    await tick()
+    await w.get('[data-testid="from"]').setValue('08:00')
+    await w.get('[data-testid="to"]').setValue('10:00')
+    await tick()
+    expect(api.preview.mock.calls.at(-1)![0]).toMatchObject({ start_time: '08:00', end_time: '10:00' })
+    expect(w.get('[data-testid="days"]').text()).toBe('0,22')
+    expect(w.get('[data-testid="calc"]').text()).toContain('2 jam dari 9 jam kerja hari itu')
+    expect(w.get('[data-testid="hours"]').text()).toContain('08:00–17:00')
 
     await w.get('[data-testid="reason"]').setValue('Kontrol ke dokter')
     await w.get('form').trigger('submit')
@@ -113,9 +150,45 @@ describe('LeaveRequestPage (H-08)', () => {
     expect(api.submit.mock.calls[0]![0]).toMatchObject({
       leave_type_id: 3,
       half_day: true,
-      half_session: 'pagi',
+      start_time: '08:00',
+      end_time: '10:00',
       reason: 'Kontrol ke dokter',
     })
+  })
+
+  it('jam selesai tidak setelah jam mulai ditolak di sisi klien', async () => {
+    const w = await mountPage()
+    await w.get('[data-testid="type-IZ"]').trigger('click')
+    await w.get('[data-testid="mode-partial"]').trigger('click')
+    await tick()
+    await w.get('[data-testid="from"]').setValue('10:00')
+    await w.get('[data-testid="to"]').setValue('09:00')
+    await w.get('[data-testid="reason"]').setValue('x')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('Jam selesai harus setelah jam mulai')
+    expect(api.submit).not.toHaveBeenCalled()
+  })
+
+  it('jadwal dengan Sabtu: ringkasan jam kerja menyebut Sabtu 09:00–15:00', async () => {
+    api.preview.mockResolvedValue(
+      makePreview({
+        working_days: {
+          ...workingDays('2', ['2026-11-27', '2026-11-28']),
+          schedule: 'Shift Sabtu',
+          breakdown: [
+            { date: '2026-11-27', weekday: 'Jum', counted: true, hours: '09:00–17:00', minutes: 480 },
+            { date: '2026-11-28', weekday: 'Sab', counted: true, hours: '09:00–15:00', minutes: 360 },
+          ],
+        },
+      }),
+    )
+    const w = await mountPage()
+    const t = w.get('[data-testid="hours"]').text()
+    expect(t).toContain('Shift Sabtu')
+    expect(t).toContain('Jum 09:00–17:00')
+    expect(t).toContain('Sab 09:00–15:00')
+    expect(w.get('[data-testid="days"]').text()).toBe('2')
   })
 
   it('alasan kosong ditolak di sisi klien', async () => {

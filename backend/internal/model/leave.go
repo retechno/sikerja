@@ -36,13 +36,13 @@ type LeaveType struct {
 	Base
 	Name              string           `gorm:"size:100;not null" json:"name"`
 	Code              string           `gorm:"size:20;not null;uniqueIndex:uq_leave_types_code" json:"code"`
-	AnnualQuota       *decimal.Decimal `gorm:"type:decimal(5,1)" json:"annual_quota"`
+	AnnualQuota       *decimal.Decimal `gorm:"type:decimal(6,2)" json:"annual_quota"`
 	DeductsBalance    bool             `gorm:"not null;default:false" json:"deducts_balance"`
 	RequiresAttach    bool             `gorm:"column:requires_attachment;not null;default:false" json:"requires_attachment"`
-	AttachMinDays     decimal.Decimal  `gorm:"column:attachment_min_days;type:decimal(4,1);not null;default:0" json:"attachment_min_days"`
+	AttachMinDays     decimal.Decimal  `gorm:"column:attachment_min_days;type:decimal(6,2);not null;default:0" json:"attachment_min_days"`
 	AllowHalfDay      bool             `gorm:"not null;default:false" json:"allow_half_day"`
 	MinTenureMonths   int              `gorm:"not null;default:0" json:"min_tenure_months"`
-	MaxDaysPerRequest *decimal.Decimal `gorm:"type:decimal(5,1)" json:"max_days_per_request"`
+	MaxDaysPerRequest *decimal.Decimal `gorm:"type:decimal(6,2)" json:"max_days_per_request"`
 	Sort              int              `gorm:"not null;default:0" json:"sort"`
 	IsActive          bool             `gorm:"not null;default:true" json:"is_active"`
 	DeletedAt         gorm.DeletedAt   `gorm:"index" json:"-"`
@@ -53,8 +53,8 @@ type LeaveBalance struct {
 	EmployeeID  uint64          `gorm:"not null;uniqueIndex:uq_leave_balances_etn,priority:1" json:"employee_id"`
 	LeaveTypeID uint64          `gorm:"not null;uniqueIndex:uq_leave_balances_etn,priority:2" json:"leave_type_id"`
 	Year        int             `gorm:"not null;uniqueIndex:uq_leave_balances_etn,priority:3" json:"year"`
-	Quota       decimal.Decimal `gorm:"type:decimal(5,1);not null;default:0" json:"quota"`
-	Used        decimal.Decimal `gorm:"type:decimal(5,1);not null;default:0" json:"used"`
+	Quota       decimal.Decimal `gorm:"type:decimal(6,2);not null;default:0" json:"quota"`
+	Used        decimal.Decimal `gorm:"type:decimal(6,2);not null;default:0" json:"used"`
 }
 
 type LeaveRequest struct {
@@ -66,7 +66,9 @@ type LeaveRequest struct {
 	EndDate        time.Time       `gorm:"type:date;not null;index:idx_leave_requests_range,priority:2" json:"end_date"`
 	HalfDay        bool            `gorm:"not null;default:false" json:"half_day"`
 	HalfSession    *string         `gorm:"size:10" json:"half_session"`
-	Days           decimal.Decimal `gorm:"type:decimal(5,1);not null" json:"days"`
+	StartTime      *string         `gorm:"size:5" json:"start_time"` // izin sebagian hari: jam mulai "HH:MM"
+	EndTime        *string         `gorm:"size:5" json:"end_time"`
+	Days           decimal.Decimal `gorm:"type:decimal(6,2);not null" json:"days"`
 	Reason         string          `gorm:"type:text" json:"reason"`
 	AttachmentPath string          `gorm:"size:255" json:"-"`
 	AttachmentName string          `gorm:"size:200" json:"attachment_name"`
@@ -107,3 +109,20 @@ type Setting struct {
 }
 
 func (Setting) TableName() string { return "app_settings" }
+
+// WorkSchedule: jadwal kerja mingguan yang dipakai departemen. Hari yang tidak punya baris = libur mingguan.
+type WorkSchedule struct {
+	Base
+	Name      string            `gorm:"size:100;not null;uniqueIndex:uq_work_schedules_name" json:"name"`
+	IsDefault bool              `gorm:"not null;default:false" json:"is_default"`
+	Days      []WorkScheduleDay `gorm:"foreignKey:ScheduleID;constraint:OnDelete:CASCADE" json:"days"`
+}
+
+// WorkScheduleDay: jam kerja satu hari. Weekday 0 = Minggu ... 6 = Sabtu; jam "HH:MM".
+type WorkScheduleDay struct {
+	Base
+	ScheduleID uint64 `gorm:"not null;uniqueIndex:uq_work_schedule_days_sw,priority:1" json:"-"`
+	Weekday    int    `gorm:"not null;uniqueIndex:uq_work_schedule_days_sw,priority:2" json:"weekday"`
+	StartTime  string `gorm:"size:5;not null" json:"start_time"`
+	EndTime    string `gorm:"size:5;not null" json:"end_time"`
+}
