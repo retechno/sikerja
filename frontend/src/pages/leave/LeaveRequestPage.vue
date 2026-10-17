@@ -6,7 +6,7 @@ import BalanceList from '@/components/leave/BalanceList.vue'
 import { ApiError, leave, type Colleague, type LeaveBalance, type LeavePreview, type LeaveType } from '@/api'
 import { useToastStore } from '@/stores/toast'
 import { useLoader } from '@/lib/useLoader'
-import { fmtDays, fmtWeekdayDate, todayYmd } from '@/lib/leave'
+import { fmtDays, fmtHours, fmtWeekdayDate, fromMinutes, parseHours, toMinutes, todayYmd } from '@/lib/leave'
 
 // H-08 — Pengajuan Izin & Cuti (juga tampilan ponsel M08). Jumlah hari kerja dihitung API secara live.
 const router = useRouter()
@@ -39,7 +39,9 @@ function nextWeekday(): string {
 const typeId = ref<number | null>(null)
 const start = ref(nextWeekday())
 const end = ref(start.value)
-const mode = ref<'full' | 'pagi' | 'siang'>('full')
+const mode = ref<'full' | 'partial'>('full')
+const fromTime = ref('')
+const toTime = ref('')
 const reason = ref('')
 const substituteId = ref<number | null>(null)
 const file = ref<File | null>(null)
@@ -47,7 +49,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const errors = ref<Record<string, string>>({})
 const busy = ref(false)
 
-const half = computed(() => mode.value !== 'full')
+const half = computed(() => mode.value === 'partial')
 const type = computed<LeaveType | null>(() => data.value?.types.find((t) => t.id === typeId.value) ?? null)
 const minDate = computed(() => addDays(todayYmd(), -7))
 
@@ -91,6 +93,9 @@ async function runPreview() {
       start_date: start.value,
       end_date: end.value,
       half_day: half.value,
+      ...(half.value && fromTime.value && toTime.value
+        ? { start_time: fromTime.value, end_time: toTime.value }
+        : {}),
     })
     if (my !== seq) return
     preview.value = r
@@ -103,12 +108,56 @@ async function runPreview() {
     if (my === seq) previewing.value = false
   }
 }
-watch([typeId, start, end, mode], () => {
+watch([typeId, start, end, mode, fromTime, toTime], () => {
   clearTimeout(timer)
   timer = setTimeout(runPreview, 250)
 })
 onMounted(runPreview)
 onBeforeUnmount(() => clearTimeout(timer))
+
+// jam kerja hari yang dipilih (dari rincian API) — dasar tombol Pagi/Siang dan jam bawaan
+const dayHours = computed(() =>
+  parseHours((preview.value?.working_days.breakdown ?? []).find((d) => d.counted)?.hours),
+)
+function quick(which: 'pagi' | 'siang') {
+  // paruh pertama/kedua dihitung server dari jam efektif (istirahat tidak ikut dihitung)
+  const w = preview.value?.working_days
+  const r = parseHours(which === 'pagi' ? w?.morning : w?.afternoon)
+  if (!r) return
+  fromTime.value = fromMinutes(r[0])
+  toTime.value = fromMinutes(r[1])
+}
+// masuk mode sebagian hari: isi paruh pagi begitu jam kerja hari itu diketahui
+watch([preview, mode], () => {
+  if (half.value && !fromTime.value && dayHours.value) quick('pagi')
+})
+watch(mode, (m) => {
+  if (m === 'full') fromTime.value = toTime.value = ''
+})
+// ganti tanggal: jam lama bisa di luar jam kerja hari baru
+watch(start, () => {
+  fromTime.value = toTime.value = ''
+})
+
+const partialInfo = computed(() => {
+  const w = preview.value?.working_days
+  if (!half.value || !w?.partial_minutes || !w.day_minutes) return ''
+  return `${fmtHours(w.partial_minutes)} dari ${fmtHours(w.day_minutes)} kerja efektif hari itu`
+})
+// ringkasan jam kerja per hari pada rentang, mis. "Sen–Jum 09:00–17:00 · Sab 09:00–15:00"
+const hoursSummary = computed(() => {
+  const seen = new Map<string, string>()
+  for (const d of preview.value?.working_days.breakdown ?? []) {
+    if (!d.counted || !d.hours) continue
+    seen.set(
+      d.hours,
+      [...(seen.get(d.hours)?.split(', ') ?? []), d.weekday]
+        .filter((x, i, a) => a.indexOf(x) === i)
+        .join(', '),
+    )
+  }
+  return [...seen.entries()].map(([h, days]) => `${days} ${h}`).join(' · ')
+})
 
 const days = computed(() => (preview.value ? Number(preview.value.working_days.days) : 0))
 const needFile = computed(
@@ -167,6 +216,9 @@ async function submit() {
   if (!start.value) e.start_date = 'Tanggal mulai wajib diisi'
   if (!end.value) e.end_date = 'Tanggal selesai wajib diisi'
   if (!reason.value.trim()) e.reason = 'Alasan wajib diisi'
+  if (half.value && (!fromTime.value || !toTime.value)) e.end_time = 'Isi jam mulai dan jam selesai'
+  else if (half.value && toMinutes(toTime.value) <= toMinutes(fromTime.value))
+    e.end_time = 'Jam selesai harus setelah jam mulai'
   if (!previewError.value && preview.value && days.value <= 0)
     e.start_date = 'Rentang ini tidak berisi hari kerja (akhir pekan atau hari libur)'
   if (previewError.value) e.end_date = previewError.value
@@ -182,7 +234,9 @@ async function submit() {
       start_date: start.value,
       end_date: end.value,
       half_day: half.value,
-      half_session: mode.value === 'siang' ? 'siang' : 'pagi',
+      half_session: 'pagi',
+      start_time: fromTime.value,
+      end_time: toTime.value,
       reason: reason.value.trim(),
       substitute_id: substituteId.value,
       attachment: file.value,
@@ -265,13 +319,13 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
               <button
                 v-for="o in [
                   { v: 'full', l: 'Satu hari / lebih' },
-                  { v: 'pagi', l: 'Setengah hari · pagi' },
-                  { v: 'siang', l: 'Setengah hari · siang' },
+                  { v: 'partial', l: 'Sebagian hari (per jam)' },
                 ]"
                 :key="o.v"
                 type="button"
                 role="radio"
                 :aria-checked="mode === o.v"
+                :data-testid="`mode-${o.v}`"
                 class="inline-flex min-h-[40px] items-center rounded-full border px-3.5 text-[13px] font-semibold"
                 :class="
                   mode === o.v
@@ -282,6 +336,46 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
               >
                 {{ o.l }}
               </button>
+            </div>
+            <div v-if="half" class="mt-1 grid grid-cols-2 gap-3 sm:gap-4" data-testid="partial-box">
+              <label class="field"
+                >Dari jam
+                <input
+                  v-model="fromTime"
+                  type="time"
+                  step="900"
+                  class="input"
+                  :class="{ invalid: errors.start_time || errors.end_time }"
+                  data-testid="from"
+                />
+                <span v-if="errors.start_time" class="err">{{ errors.start_time }}</span>
+              </label>
+              <label class="field"
+                >Sampai jam
+                <input
+                  v-model="toTime"
+                  type="time"
+                  step="900"
+                  class="input"
+                  :class="{ invalid: errors.end_time }"
+                  data-testid="to"
+                />
+                <span v-if="errors.end_time" class="err">{{ errors.end_time }}</span>
+              </label>
+              <div class="col-span-2 flex flex-wrap gap-2">
+                <button type="button" class="btn sm" data-testid="quick-pagi" @click="quick('pagi')">
+                  Paruh pagi
+                </button>
+                <button type="button" class="btn sm" data-testid="quick-siang" @click="quick('siang')">
+                  Paruh siang
+                </button>
+                <span v-if="dayHours" class="muted self-center text-xs"
+                  >Jam kerja hari itu {{ fromMinutes(dayHours[0]) }}–{{ fromMinutes(dayHours[1])
+                  }}<template v-if="preview?.working_days.break">
+                    · istirahat {{ preview.working_days.break }}</template
+                  ></span
+                >
+              </div>
             </div>
           </div>
 
@@ -334,6 +428,7 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
                   <template v-else-if="previewError"
                     ><span class="text-bad-fg">{{ previewError }}</span></template
                   >
+                  <template v-else-if="preview && partialInfo">{{ partialInfo }}</template>
                   <template v-else-if="preview"
                     >{{ fmtWeekdayDate(start).split(',')[0] }} – {{ fmtWeekdayDate(end).split(',')[0] }} ·
                     {{ preview.working_days.calendar_days }} hari kalender</template
@@ -343,28 +438,36 @@ const subs = computed<Colleague[]>(() => data.value?.subs ?? [])
             </div>
             <div v-if="preview" class="flex flex-wrap gap-1.5" aria-label="Rincian hari">
               <span
-                v-for="d in preview.working_days.breakdown.slice(0, 31)"
+                v-for="d in (preview.working_days.breakdown ?? []).slice(0, 31)"
                 :key="d.date"
                 class="rounded-md px-2 py-0.5 text-xs font-semibold"
                 :class="
                   d.counted ? 'bg-primary-soft text-[#0B4A43]' : 'bg-line-soft text-ink-soft line-through'
                 "
-                :title="d.holiday || (d.skip === 'weekend' ? 'Akhir pekan' : '')"
+                :title="d.holiday || (d.skip === 'weekend' ? 'Bukan hari kerja' : d.hours)"
                 >{{ dayLabel(d.date) }}</span
               >
             </div>
+            <p v-if="hoursSummary" class="muted m-0 basis-full text-[12.5px]" data-testid="hours">
+              Jam kerja ({{ preview?.working_days.schedule }}): {{ hoursSummary
+              }}<template v-if="preview?.working_days.break">
+                · istirahat {{ preview.working_days.break }} tidak dihitung</template
+              >
+            </p>
             <p class="muted m-0 basis-full text-[12.5px]">
-              <template v-if="preview && !preview.working_days.skipped.length"
-                >Tidak ada akhir pekan atau hari libur pada rentang ini.</template
+              <template v-if="preview && !(preview.working_days.skipped ?? []).length"
+                >Tidak ada hari libur atau hari di luar jadwal kerja pada rentang ini.</template
               >
               <template v-else-if="preview"
-                >Tidak dihitung: {{ preview.working_days.skipped.length }} hari<template v-if="holidayNote">
+                >Tidak dihitung: {{ (preview.working_days.skipped ?? []).length }} hari<template
+                  v-if="holidayNote"
+                >
                   (libur: {{ holidayNote }})</template
                 >.</template
               >
             </p>
-            <ul v-if="preview?.warnings.length" class="m-0 basis-full list-none p-0" role="alert">
-              <li v-for="w in preview.warnings" :key="w" class="text-[13px] font-semibold text-warn-fg">
+            <ul v-if="preview?.warnings?.length" class="m-0 basis-full list-none p-0" role="alert">
+              <li v-for="w in preview.warnings ?? []" :key="w" class="text-[13px] font-semibold text-warn-fg">
                 ⚠ {{ w }}
               </li>
             </ul>

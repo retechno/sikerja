@@ -211,7 +211,8 @@ func (h *H) leavePreview(c *gin.Context) {
 		return
 	}
 	half, _ := strconv.ParseBool(c.Query("half_day"))
-	v, err := h.Leaves.Preview(actor(c), qUint(c, "type_id"), start, end, half)
+	sp := service.PartialSpec{Half: half, Session: c.Query("half_session"), Start: c.Query("start_time"), End: c.Query("end_time")}
+	v, err := h.Leaves.Preview(actor(c), qUint(c, "type_id"), start, end, sp)
 	if err != nil {
 		h.fail(c, err)
 		return
@@ -245,6 +246,8 @@ func (h *H) submitLeave(c *gin.Context) {
 	in := service.LeaveInput{
 		LeaveTypeID: typeID,
 		HalfSession: c.PostForm("half_session"),
+		StartTime:   c.PostForm("start_time"),
+		EndTime:     c.PostForm("end_time"),
 		Reason:      c.PostForm("reason"),
 	}
 	in.StartDate = parseDateField("start_date", c.PostForm("start_date"), f)

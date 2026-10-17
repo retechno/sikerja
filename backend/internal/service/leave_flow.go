@@ -159,5 +159,9 @@ func fmtRange(a, b time.Time) string {
 
 // fmtDays: desimal pakai koma ("0,5", "2").
 func fmtDays(d decimal.Decimal) string {
-	return strings.Replace(strings.TrimSuffix(d.StringFixed(1), ".0"), ".", ",", 1)
+	t := d.StringFixed(2)
+	if strings.Contains(t, ".") {
+		t = strings.TrimRight(strings.TrimRight(t, "0"), ".")
+	}
+	return strings.Replace(t, ".", ",", 1)
 }

@@ -37,6 +37,7 @@ type Deps struct {
 	Holidays    *service.HolidayService
 	WorkingDays *service.WorkingDayService
 	NotifyAdmin *service.NotifyService
+	Schedules   *service.ScheduleService
 }
 
 type H struct{ Deps }

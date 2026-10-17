@@ -3,6 +3,7 @@ import type {
   AppraisalView,
   Colleague,
   Holiday,
+  WorkSchedule,
   LeaveBalance,
   LeaveCalendar,
   LeavePreview,
@@ -57,7 +58,10 @@ export const photoUrl = (employeeId: number) => `/api/v1/employees/${employeeId}
 // ---------- master ----------
 export const master = {
   departments: () => get<Department[]>('/departments'),
-  saveDepartment: (id: number | null, body: { name: string; code: string; head_id?: number | null }) =>
+  saveDepartment: (
+    id: number | null,
+    body: { name: string; code: string; head_id?: number | null; schedule_id?: number | null },
+  ) =>
     id ? send<Department>('put', `/departments/${id}`, body) : send<Department>('post', '/departments', body),
   deleteDepartment: (id: number) => send<void>('delete', `/departments/${id}`),
   positions: (departmentId?: number) =>
@@ -228,6 +232,8 @@ export interface LeaveSubmit {
   end_date: string
   half_day: boolean
   half_session: 'pagi' | 'siang'
+  start_time: string
+  end_time: string
   reason: string
   substitute_id: number | null
   attachment: File | null
@@ -246,8 +252,14 @@ export const leave = {
   balances: (params: { employee_id?: number; year?: number } = {}) =>
     get<LeaveBalance[]>('/leave/balances', params),
   /** Hitung hari kerja live (tanpa menyimpan). */
-  preview: (p: { type_id?: number; start_date: string; end_date: string; half_day: boolean }) =>
-    get<LeavePreview>('/leave/preview', p),
+  preview: (p: {
+    type_id?: number
+    start_date: string
+    end_date: string
+    half_day: boolean
+    start_time?: string
+    end_time?: string
+  }) => get<LeavePreview>('/leave/preview', p),
   summary: () => get<LeaveSummary>('/leave/summary'),
   substitutes: () => get<Colleague[]>('/leave/substitutes'),
   calendar: (p: { month: string; department_id?: number; include_pending: boolean }) =>
@@ -258,7 +270,10 @@ export const leave = {
     fd.append('start_date', b.start_date)
     fd.append('end_date', b.end_date)
     fd.append('half_day', String(b.half_day))
-    if (b.half_day) fd.append('half_session', b.half_session)
+    if (b.half_day) {
+      fd.append('start_time', b.start_time)
+      fd.append('end_time', b.end_time)
+    }
     fd.append('reason', b.reason)
     if (b.substitute_id) fd.append('substitute_id', String(b.substitute_id))
     if (b.attachment) fd.append('attachment', b.attachment)
@@ -277,4 +292,21 @@ export const leave = {
   notifySettings: () => get<NotifySetting[]>('/notification-settings'),
   setNotifySetting: (key: string, enabled: boolean) =>
     send<NotifySetting[]>('put', '/notification-settings', { key, enabled }),
+}
+
+export interface ScheduleBody {
+  name: string
+  is_default: boolean
+  break_start: string
+  break_end: string
+  days: { weekday: number; start_time: string; end_time: string }[]
+}
+
+export const schedules = {
+  list: () => get<WorkSchedule[]>('/work-schedules'),
+  save: (id: number | null, b: ScheduleBody) =>
+    id
+      ? send<WorkSchedule>('put', `/work-schedules/${id}`, b)
+      : send<WorkSchedule>('post', '/work-schedules', b),
+  remove: (id: number) => send<void>('delete', `/work-schedules/${id}`),
 }

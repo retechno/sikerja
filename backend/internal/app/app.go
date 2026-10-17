@@ -45,5 +45,6 @@ func NewDeps(cfg config.Config, log zerolog.Logger, db *gorm.DB, rdb *redis.Clie
 		Holidays:    service.NewHolidayService(store),
 		WorkingDays: workingDays,
 		NotifyAdmin: notifier,
+		Schedules:   service.NewScheduleService(store),
 	}
 }

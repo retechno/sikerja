@@ -46,10 +46,12 @@ type Base struct {
 
 type Department struct {
 	Base
-	Name      string         `gorm:"size:100;not null" json:"name"`
-	Code      string         `gorm:"size:20;not null;uniqueIndex:uq_departments_code" json:"code"`
-	HeadID    *uint64        `json:"head_id"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Name   string  `gorm:"size:100;not null" json:"name"`
+	Code   string  `gorm:"size:20;not null;uniqueIndex:uq_departments_code" json:"code"`
+	HeadID *uint64 `json:"head_id"`
+	// ScheduleID: jadwal kerja departemen; nil = jadwal default perusahaan.
+	ScheduleID *uint64        `gorm:"index" json:"schedule_id"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 type Position struct {
@@ -216,6 +218,7 @@ func All() []any {
 		&BehaviorAspect{}, &Appraisal{}, &AppraisalScore{},
 		&Notification{}, &ActivityLog{}, &PasswordReset{},
 		&LeaveType{}, &LeaveBalance{}, &LeaveRequest{}, &LeaveApproval{}, &Holiday{}, &Setting{},
+		&WorkSchedule{}, &WorkScheduleDay{},
 	}
 }
 

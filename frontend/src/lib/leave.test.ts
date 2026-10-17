@@ -11,7 +11,11 @@ import {
   itemsOn,
   leaveRangeText,
   monthTitle,
+  parseHours,
   quotaText,
+  summarizeSchedule,
+  fmtHours,
+  leaveTitle,
   relativeDay,
   shiftMonth,
   weekdayOf,
@@ -137,5 +141,53 @@ describe('ringkasan jenis cuti (H-16)', () => {
     expect(attachmentText(CT)).toBe('Tidak')
     expect(approvalText(IZ)).toBe('Atasan (½ hari) · Atasan → HR')
     expect(approvalText(CT)).toBe('Atasan → HR')
+  })
+})
+
+describe('jam kerja & izin sebagian hari', () => {
+  it('leaveRangeText menyebut jam bila ada, sesi bila hanya sesi', () => {
+    const base = { start_date: '2026-10-09', end_date: '2026-10-09', half_day: true }
+    expect(leaveRangeText({ ...base, half_session: null, start_time: '08:00', end_time: '10:00' })).toBe(
+      '9 Okt 2026, 08:00–10:00',
+    )
+    expect(leaveRangeText({ ...base, half_session: 'pagi' })).toBe('9 Okt 2026, pagi')
+    expect(leaveRangeText({ ...base, half_day: false, half_session: null })).toBe('9 Okt 2026')
+  })
+
+  it('leaveTitle: paruh hari = setengah hari, jam bebas = sebagian hari', () => {
+    const t = { leave_type: { name: 'Izin' } } as never
+    expect(leaveTitle({ ...(t as object), half_day: true, half_session: 'pagi' } as never)).toBe(
+      'Izin setengah hari',
+    )
+    expect(leaveTitle({ ...(t as object), half_day: true, half_session: null } as never)).toBe(
+      'Izin sebagian hari',
+    )
+    expect(leaveTitle({ ...(t as object), half_day: false, half_session: null } as never)).toBe('Izin')
+  })
+
+  it('desimal hari sampai 2 angka dengan koma', () => {
+    expect(fmtDays('0.22')).toBe('0,22')
+    expect(fmtDays('0.5')).toBe('0,5')
+    expect(fmtDays('3')).toBe('3')
+  })
+
+  it('parseHours & fmtHours', () => {
+    expect(parseHours('09:00–15:00')).toEqual([540, 900])
+    expect(parseHours('')).toBeNull()
+    expect(parseHours('abc')).toBeNull()
+    expect(fmtHours(360)).toBe('6 jam')
+    expect(fmtHours(90)).toBe('1,5 jam')
+  })
+
+  it('summarizeSchedule menggabungkan hari berurutan berjam sama', () => {
+    const wk = [1, 2, 3, 4, 5].map((weekday) => ({ weekday, start_time: '09:00', end_time: '17:00' }))
+    expect(summarizeSchedule([...wk, { weekday: 6, start_time: '09:00', end_time: '15:00' }])).toBe(
+      'Sen–Jum 09:00–17:00 · Sab 09:00–15:00',
+    )
+    expect(summarizeSchedule(wk.map((d) => ({ ...d, start_time: '08:00' })))).toBe('Sen–Jum 08:00–17:00')
+    expect(summarizeSchedule([])).toBe('Tidak ada hari kerja')
+    expect(summarizeSchedule([{ weekday: 0, start_time: '10:00', end_time: '14:00' }])).toBe(
+      'Min 10:00–14:00',
+    )
   })
 })

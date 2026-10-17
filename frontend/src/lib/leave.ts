@@ -13,7 +13,7 @@ export const LEAVE_STATUS: Record<LeaveStatus, { label: string; cls: string }> =
 export function fmtDays(v: unknown): string {
   const n = typeof v === 'number' ? v : Number(v)
   if (!Number.isFinite(n)) return '—'
-  return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 }).format(n)
+  return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(n)
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -69,19 +69,49 @@ export function fmtRange(startIso: string, endIso: string): string {
   return `${d1} ${MONTHS[m1 - 1]} ${y1} – ${d2} ${MONTHS[m2 - 1]} ${y2}`
 }
 
-/** Rentang untuk satu pengajuan, menyebut sesi bila setengah hari: "9 Okt 2026, pagi". */
+/** Rentang untuk satu pengajuan; izin sebagian hari menyebut jam ("9 Okt 2026, 08:00–10:00") atau sesinya. */
 export function leaveRangeText(
-  l: Pick<LeaveRequest, 'start_date' | 'end_date' | 'half_day' | 'half_session'>,
+  l: Pick<LeaveRequest, 'start_date' | 'end_date' | 'half_day' | 'half_session'> &
+    Partial<Pick<LeaveRequest, 'start_time' | 'end_time'>>,
 ): string {
   const base = fmtRange(l.start_date, l.end_date)
-  return l.half_day && l.half_session ? `${base}, ${l.half_session}` : base
+  if (!l.half_day) return base
+  if (l.start_time && l.end_time) return `${base}, ${l.start_time}–${l.end_time}`
+  return l.half_session ? `${base}, ${l.half_session}` : base
 }
 
-/** Nama jenis untuk daftar: izin setengah hari dibedakan. */
-export function leaveTitle(l: Pick<LeaveRequest, 'half_day' | 'leave_type'>): string {
+/** Nama jenis untuk daftar: paruh hari = "setengah hari", jam bebas = "sebagian hari". */
+export function leaveTitle(l: Pick<LeaveRequest, 'half_day' | 'half_session' | 'leave_type'>): string {
   const n = l.leave_type?.name ?? 'Pengajuan'
-  return l.half_day ? `${n} setengah hari` : n
+  if (!l.half_day) return n
+  return l.half_session ? `${n} setengah hari` : `${n} sebagian hari`
 }
+
+/** Menit dari "HH:MM". */
+export function toMinutes(hm: string): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hm.trim())
+  return m ? Number(m[1]) * 60 + Number(m[2]) : NaN
+}
+
+export function fromMinutes(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+}
+
+/** Jam kerja dari teks "09:00–15:00" → [mulai, selesai] dalam menit. */
+export function parseHours(h?: string): [number, number] | null {
+  if (!h) return null
+  const [a, b] = h.split('–')
+  const x = toMinutes(a ?? '')
+  const y = toMinutes(b ?? '')
+  return Number.isNaN(x) || Number.isNaN(y) ? null : [x, y]
+}
+
+/** Lama dalam jam, mis. 90 → "1,5 jam". */
+export function fmtHours(min: number): string {
+  return `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(min / 60)} jam`
+}
+
+export const WEEKDAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
 
 /** "hari ini", "kemarin", "3 hari lalu" dari tanggal ISO relatif ke sekarang. */
 export function relativeDay(iso: string, now = new Date()): string {
@@ -193,4 +223,28 @@ export function quotaText(t: LeaveType): string {
 export function attachmentText(t: LeaveType): string {
   if (!t.requires_attachment) return 'Tidak'
   return Number(t.attachment_min_days) > 0 ? `Ya, jika > ${fmtDays(t.attachment_min_days)} hari` : 'Ya'
+}
+
+const ORDER = [1, 2, 3, 4, 5, 6, 0] // Senin ... Minggu
+const SHORT = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
+
+/** Ringkasan jadwal: hari berurutan berjam sama digabung, mis. "Sen–Jum 08:00–17:00 · Sab 09:00–15:00". */
+export function summarizeSchedule(days: { weekday: number; start_time: string; end_time: string }[]): string {
+  const by = new Map(days.map((d) => [d.weekday, `${d.start_time}–${d.end_time}`]))
+  const parts: string[] = []
+  let i = 0
+  while (i < ORDER.length) {
+    const h = by.get(ORDER[i]!)
+    if (!h) {
+      i++
+      continue
+    }
+    let j = i
+    while (j + 1 < ORDER.length && by.get(ORDER[j + 1]!) === h) j++
+    const a = SHORT[ORDER[i]!]
+    const b = SHORT[ORDER[j]!]
+    parts.push(`${i === j ? a : `${a}–${b}`} ${h}`)
+    i = j + 1
+  }
+  return parts.join(' · ') || 'Tidak ada hari kerja'
 }

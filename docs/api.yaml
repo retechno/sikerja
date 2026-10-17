@@ -540,9 +540,12 @@ paths:
         - { name: type_id, in: query, schema: { type: integer } }
         - { name: start_date, in: query, required: true, schema: { type: string, format: date } }
         - { name: end_date, in: query, required: true, schema: { type: string, format: date } }
-        - { name: half_day, in: query, schema: { type: boolean } }
+        - { name: half_day, in: query, schema: { type: boolean }, description: "izin sebagian hari (satu tanggal)" }
+        - { name: half_session, in: query, schema: { type: string, enum: [pagi, siang] }, description: "pintasan: paruh pertama/kedua jam kerja hari itu" }
+        - { name: start_time, in: query, schema: { type: string, example: "09:00" }, description: "jam mulai izin sebagian hari (HH:MM)" }
+        - { name: end_time, in: query, schema: { type: string, example: "11:00" } }
       responses:
-        "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeavePreview" } } } } } }
+        "200": { description: "OK; hari kerja dihitung menurut jadwal departemen pengaju", content: { application/json: { schema: { type: object, properties: { data: { $ref: "#/components/schemas/LeavePreview" } } } } } }
         "422": { $ref: "#/components/responses/Error" }
   /leave/summary:
     get:
@@ -592,6 +595,8 @@ paths:
                 end_date: { type: string, format: date }
                 half_day: { type: boolean }
                 half_session: { type: string, enum: [pagi, siang] }
+                start_time: { type: string, example: "09:00", description: "izin sebagian hari: jam mulai (HH:MM) di dalam jam kerja hari itu; hari = lama izin / jam kerja hari itu" }
+                end_time: { type: string, example: "11:00" }
                 reason: { type: string, maxLength: 1000 }
                 substitute_id: { type: integer }
                 attachment: { type: string, format: binary, description: "PDF/JPG/PNG maks 5 MB (jenisnya dicek dari isi berkas)" }
@@ -641,6 +646,28 @@ paths:
       tags: [Izin & Cuti]
       summary: Jumlah pengajuan yang menunggu keputusan pengguna (lencana menu)
       responses: { "200": { description: "OK; data = {pending}" } }
+  /work-schedules:
+    get:
+      tags: [Izin & Cuti]
+      summary: Daftar jadwal kerja (hari & jam kerja) beserta harinya (HR, Direktur)
+      responses: { "200": { description: OK, content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/WorkSchedule" } } } } } } }, "403": { $ref: "#/components/responses/Error" } }
+    post:
+      tags: [Izin & Cuti]
+      summary: Tambah jadwal kerja (HR). Jadwal pertama otomatis menjadi default.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleInput" } } } }
+      responses: { "201": { description: Dibuat }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+  /work-schedules/{id}:
+    put:
+      tags: [Izin & Cuti]
+      summary: Ubah jadwal kerja (HR). Jadwal default tidak bisa dicopot kecuali dengan menjadikan jadwal lain default.
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleInput" } } } }
+      responses: { "200": { description: OK }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
+    delete:
+      tags: [Izin & Cuti]
+      summary: Hapus jadwal (HR); jadwal default atau yang masih dipakai departemen ditolak (409)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses: { "204": { description: Dihapus }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" }, "409": { $ref: "#/components/responses/Error" } }
   /notification-settings:
     get:
       tags: [Izin & Cuti]
@@ -683,11 +710,11 @@ components:
     Decimal: { type: string, example: "95.65" }
     Department:
       type: object
-      properties: { id: { type: integer }, name: { type: string }, code: { type: string }, head_id: { type: integer, nullable: true } }
+      properties: { id: { type: integer }, name: { type: string }, code: { type: string }, head_id: { type: integer, nullable: true }, schedule_id: { type: integer, nullable: true } }
     DepartmentInput:
       type: object
       required: [name, code]
-      properties: { name: { type: string }, code: { type: string }, head_id: { type: integer, nullable: true } }
+      properties: { name: { type: string }, code: { type: string }, head_id: { type: integer, nullable: true }, schedule_id: { type: integer, nullable: true, description: "jadwal kerja; kosong = jadwal default" } }
     PositionInput:
       type: object
       required: [name]
@@ -913,7 +940,13 @@ components:
       type: object
       properties:
         days: { $ref: "#/components/schemas/Decimal" }
-        half_day: { type: boolean }
+        schedule: { type: string, description: "nama jadwal kerja yang dipakai" }
+        half_day: { type: boolean, description: "izin sebagian hari" }
+        partial_minutes: { type: integer, description: "menit kerja efektif izin (tanpa jam istirahat)" }
+        day_minutes: { type: integer, description: "menit kerja efektif hari itu (jam kerja dikurangi istirahat)" }
+        break: { type: string, example: "12:00–13:00", description: "jam istirahat jadwal" }
+        morning: { type: string, example: "08:00–12:00", description: "paruh pertama hari kerja (untuk satu tanggal)" }
+        afternoon: { type: string, example: "13:00–17:00", description: "paruh kedua hari kerja" }
         calendar_days: { type: integer }
         breakdown: { type: array, items: { $ref: "#/components/schemas/DayInfo" } }
         skipped: { type: array, items: { $ref: "#/components/schemas/DayInfo" } }
@@ -923,7 +956,9 @@ components:
         date: { type: string, format: date }
         weekday: { type: string, example: Sen }
         counted: { type: boolean }
-        skip: { type: string, enum: [weekend, holiday] }
+        hours: { type: string, example: "09:00–15:00", description: "jam kerja hari itu (hanya hari kerja)" }
+        minutes: { type: integer, description: "menit kerja efektif hari itu, tanpa istirahat" }
+        skip: { type: string, enum: [weekend, holiday], description: "weekend = hari di luar jadwal kerja (mis. Sabtu/Minggu)" }
         holiday: { type: string }
     FlowStep:
       type: object
@@ -947,7 +982,9 @@ components:
         start_date: { type: string, format: date-time }
         end_date: { type: string, format: date-time }
         half_day: { type: boolean }
-        half_session: { type: string, enum: [pagi, siang], nullable: true }
+        half_session: { type: string, enum: [pagi, siang], nullable: true, description: "terisi bila tepat paruh pertama/kedua hari" }
+        start_time: { type: string, nullable: true, example: "09:00", description: "izin sebagian hari" }
+        end_time: { type: string, nullable: true, example: "11:00" }
         days: { $ref: "#/components/schemas/Decimal" }
         reason: { type: string }
         substitute: { $ref: "#/components/schemas/Employee" }
@@ -1001,3 +1038,24 @@ components:
     NotifySetting:
       type: object
       properties: { key: { type: string }, label: { type: string }, hint: { type: string }, enabled: { type: boolean } }
+    WorkSchedule:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        is_default: { type: boolean }
+        break_start: { type: string, example: "12:00", description: "jam istirahat; tidak dihitung sebagai jam kerja. Kosong = tanpa istirahat" }
+        break_end: { type: string, example: "13:00" }
+        days:
+          type: array
+          description: "hari kerja; hari yang tidak terdaftar = libur mingguan"
+          items: { type: object, properties: { weekday: { type: integer, minimum: 0, maximum: 6, description: "0 = Minggu ... 6 = Sabtu" }, start_time: { type: string, example: "08:00" }, end_time: { type: string, example: "17:00" } } }
+    ScheduleInput:
+      type: object
+      required: [name, days]
+      properties:
+        name: { type: string }
+        is_default: { type: boolean }
+        break_start: { type: string, example: "12:00" }
+        break_end: { type: string, example: "13:00" }
+        days: { type: array, items: { type: object, required: [weekday, start_time, end_time], properties: { weekday: { type: integer }, start_time: { type: string }, end_time: { type: string } } } }

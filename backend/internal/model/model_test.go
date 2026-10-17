@@ -16,6 +16,11 @@ import (
 	"github.com/retechno/sikerja/backend/migrations"
 )
 
+var (
+	alterTable = regexp.MustCompile(`(?s)ALTER TABLE (\w+)(.*?);`)
+	addColumn  = regexp.MustCompile(`ADD COLUMN (\w+)`)
+)
+
 var createTable = regexp.MustCompile(`(?s)CREATE TABLE (\w+) \((.*?)\n\) ENGINE`)
 
 func migrationColumns(t *testing.T) map[string][]string {
@@ -45,6 +50,13 @@ func migrationColumns(t *testing.T) map[string][]string {
 		}
 		sort.Strings(cols)
 		out[m[1]] = cols
+	}
+	// kolom yang ditambahkan lewat ALTER TABLE ... ADD COLUMN
+	for _, m := range alterTable.FindAllStringSubmatch(string(raw), -1) {
+		for _, c := range addColumn.FindAllStringSubmatch(m[2], -1) {
+			out[m[1]] = append(out[m[1]], c[1])
+		}
+		sort.Strings(out[m[1]])
 	}
 	return out
 }

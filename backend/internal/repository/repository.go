@@ -34,6 +34,7 @@ type Repos struct {
 	Approvals     ApprovalRepo
 	Holidays      HolidayRepo
 	Settings      SettingRepo
+	Schedules     ScheduleRepo
 }
 
 // Store membuat Repos dan menjalankan fungsi dalam transaksi.
@@ -73,6 +74,7 @@ func build(db *gorm.DB) Repos {
 		Approvals:     &approvalRepo{db},
 		Holidays:      &holidayRepo{db},
 		Settings:      &settingRepo{db},
+		Schedules:     &scheduleRepo{db},
 	}
 }
 

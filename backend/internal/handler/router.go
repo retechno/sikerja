@@ -96,6 +96,7 @@ func NewRouter(d Deps) *gin.Engine {
 	fin := in.Group("", middleware.RequireRoles(model.RoleHR, model.RoleDirector))
 	fin.POST("/periods/:id/appraisals/:employee_id/finalize", h.finalize)
 	fin.GET("/dashboard/director", h.dashDirector)
+	fin.GET("/work-schedules", h.listSchedules)
 	fin.GET("/reports/scores", h.reportScores)
 	fin.GET("/reports/scores/export", h.reportExport)
 	fin.GET("/kpi-templates", h.listTemplates)
@@ -124,6 +125,9 @@ func NewRouter(d Deps) *gin.Engine {
 	hr.POST("/holidays/import", h.importHolidays)
 	hr.PUT("/holidays/:id", h.updateHoliday)
 	hr.DELETE("/holidays/:id", h.deleteHoliday)
+	hr.POST("/work-schedules", h.createSchedule)
+	hr.PUT("/work-schedules/:id", h.updateSchedule)
+	hr.DELETE("/work-schedules/:id", h.deleteSchedule)
 	hr.GET("/notification-settings", h.notificationSettings)
 	hr.PUT("/notification-settings", h.setNotificationSetting)
 

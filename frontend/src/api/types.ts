@@ -8,6 +8,8 @@ export interface Department {
   name: string
   code: string
   head_id: number | null
+  /** Jadwal kerja departemen; null = jadwal default. */
+  schedule_id?: number | null
 }
 
 export interface Position {
@@ -345,13 +347,24 @@ export interface DayInfo {
   date: string
   weekday: string
   counted: boolean
+  /** Jam kerja hari itu, mis. "09:00–15:00" (hanya hari kerja). */
+  hours?: string
+  minutes?: number
   skip?: 'weekend' | 'holiday'
   holiday?: string
 }
 
 export interface WorkingDays {
   days: Dec
+  schedule: string
+  /** Izin sebagian hari. */
   half_day: boolean
+  /** Menit kerja efektif (tanpa istirahat). */
+  partial_minutes?: number
+  day_minutes?: number
+  break?: string
+  morning?: string
+  afternoon?: string
   calendar_days: number
   breakdown: DayInfo[]
   skipped: DayInfo[]
@@ -404,6 +417,9 @@ export interface LeaveRequest {
   end_date: string
   half_day: boolean
   half_session: 'pagi' | 'siang' | null
+  /** Izin sebagian hari: jam mulai/selesai "HH:MM". */
+  start_time: string | null
+  end_time: string | null
   days: Dec
   reason: string
   substitute?: Employee | null
@@ -443,6 +459,8 @@ export interface CalendarItem {
   end_date: string
   half_day: boolean
   half_session?: string
+  start_time?: string
+  end_time?: string
   status: LeaveStatus
   days: string
 }
@@ -466,4 +484,21 @@ export interface NotifySetting {
   label: string
   hint: string
   enabled: boolean
+}
+
+export interface WorkScheduleDay {
+  /** 0 = Minggu ... 6 = Sabtu */
+  weekday: number
+  start_time: string
+  end_time: string
+}
+
+export interface WorkSchedule {
+  id: number
+  name: string
+  is_default: boolean
+  /** Jam istirahat "HH:MM"; kosong = tanpa istirahat. */
+  break_start: string
+  break_end: string
+  days: WorkScheduleDay[]
 }
