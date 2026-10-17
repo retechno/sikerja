@@ -111,3 +111,114 @@ Format: **keputusan** — alasan.
   untuk origin di `CORS_ORIGINS`.
 - **Port host**: web 5173, API 8080, MySQL 3307, Redis 6380, Mailpit UI 8025 — MySQL/Redis digeser agar tidak bentrok dengan instalasi lokal.
 - **`.gitattributes`** memaksa LF supaya diff bersih di Windows.
+
+## Tambahan (Rilis 2 — izin & cuti, notifikasi)
+
+**Perlu dicek ulang HR / pemilik produk**
+- **Hari libur 2026 diisi dari ingatan atas SKB Tiga Menteri, bukan salinan resmi** (`service.OfficialHolidays`, juga di-seed dan
+  tombol "Impor dari daftar resmi"): libur nasional + cuti bersama (mis. Idul Fitri 21–22 Mar, cuti bersama 20/23/24 Mar; Idul Adha
+  27 Mei; Tahun Baru Islam 16 Jun; Maulid 25 Agu; cuti bersama Natal 24 Des). **HR wajib mencocokkan dengan SKB terbaru** sebelum
+  dipakai — tanggal yang keliru langsung mengubah hitungan hari kerja. Tahun lain belum ada daftar bawaan (tambah manual).
+- **Kuota cuti khusus**: menikah maks 3 hari kerja, duka 2, melahirkan 65 hari kerja (≈ 3 bulan). Angka ini asumsi; ikuti kebijakan
+  perusahaan dan UU Ketenagakerjaan yang berlaku. Disimpan sebagai `max_days_per_request` (batas per pengajuan), bukan saldo tahunan.
+- **Batas pembatalan = hari sebelum tanggal mulai** (mockup H-09: "dibatalkan sampai 29 Okt" untuk cuti mulai 30 Okt). SPEC hanya
+  menulis "selama tanggal mulai belum lewat". Pembatalan hanya oleh pemilik, boleh setelah disetujui (saldo dikembalikan).
+- **Pengajuan boleh mundur maksimal 7 hari** (mis. cuti sakit yang dilaporkan belakangan); lebih dari itu ditolak.
+
+**Model & aturan**
+- **Kolom tambahan di `leave_types`** (di luar SPEC): `attachment_min_days` (lampiran wajib bila hari > N; sakit = 1),
+  `min_tenure_months` (cuti tahunan 12), `max_days_per_request`, `sort`, `is_active`. `annual_quota` NULL = tidak dibatasi.
+  `deducts_balance` = saldo tahunan dikelola & dipotong saat disetujui (cuti tahunan **dan izin**, yang punya kuota sendiri);
+  jenis lain hanya dicatat. Cuti khusus dipecah tiga (menikah/melahirkan/duka) mengikuti mockup H-16.
+- **Kolom tambahan di `leave_requests`**: `number` (mis. `CT-2026-0142`: kode jenis + tahun + id), `half_session` (pagi/siang),
+  `deducted` (penanda saldo sudah dipotong agar pengembalian tepat), `cancelled_at`. Dua izin setengah hari di tanggal sama boleh
+  bila sesinya berbeda; selain itu tanggal tumpang tindih ditolak.
+- **Tabel tambahan `app_settings`** (saklar notifikasi H-16). Default semua aktif; mematikan saklar menghentikan notifikasi dalam
+  aplikasi **dan** email untuk jenis itu.
+- **Masa kerja ≥ 12 bulan** dicek pada **tanggal mulai** cuti (bukan 1 Januari). Saldo dibuat malas (saat pertama dibaca/diajukan) per
+  tahun, bukan lewat job 1 Januari; sisa tahun lalu tidak diakumulasi.
+- **Saldo "tersedia" = kuota − terpakai − menunggu** (mockup H-08). Pengajuan baru diperiksa terhadap angka itu; saat persetujuan
+  terakhir saldo diperiksa **lagi di bawah kunci baris** (`SELECT … FOR UPDATE`) sehingga kuota yang dikecilkan HR atau dua persetujuan
+  bersamaan tidak membuat saldo minus atau terpotong dua kali (409 bila tak cukup; HR bisa menolak).
+- **Pengajuan tidak boleh melintasi pergantian tahun** untuk jenis berkuota (saldo per tahun); ajukan terpisah.
+- **Alur persetujuan**: karyawan → atasan langsung (`manager_id`, atau manajer departemen) → HR; Manajer → Direktur → HR; **Direktur
+  → langsung HR; HR → langsung Direktur** (HR tidak menyetujui pengajuannya sendiri; SPEC diam soal ini). Setengah hari: tahap pertama
+  saja. Tidak ada yang bisa menyetujui pengajuannya sendiri. Penolakan wajib beralasan.
+- **Pengajuan orang di luar jangkauan menjawab 404** (bukan 403) agar keberadaannya tidak bocor; penyetuju yang bukan tahapnya → 403.
+- **Kalender tim terbuka untuk semua role** dan memperlihatkan nama + jenis (termasuk "sakit", sesuai mockup H-11), tidak pernah alasan
+  atau lampiran. Default memilih departemen sendiri.
+- **Lampiran** (surat dokter/tugas): satu berkas per pengajuan, PDF/JPG/PNG ≤ 5 MB, jenis dicek dari isi; diunduh lewat endpoint
+  dengan hak akses yang sama dengan detail pengajuan.
+- **Calon pengganti** = rekan aktif satu departemen (endpoint `GET /leave/substitutes`, karena `/employees` khusus HR).
+
+**Notifikasi**
+- `service.Notifier` + `service.Channel`: notifikasi dalam aplikasi selalu disimpan; kanal tambahan (email sekarang) dipasang di
+  `app.NewNotifier`. **WhatsApp** cukup mengimplementasikan `Channel` (`Deliver`) dan mendaftarkannya di sana.
+- Email dikirim lewat antrean asynq (`email:notice`) oleh worker; pengiriman **best-effort** — gagal dicatat di log, tidak
+  menggagalkan operasi bisnis (retry otomatis 5×).
+- Peristiwa: pengajuan baru → penyetuju tahap berjalan; disetujui tahap 1 → pengaju (kemajuan) + penyetuju tahap 2; disetujui
+  penuh / ditolak (beserta alasan) → pengaju; dibatalkan → penyetuju yang sedang/sudah menyetujui; periode dibuka → semua karyawan
+  aktif (bukan saat dibuka ulang); pengingat tenggat → lihat di bawah.
+- **Pengingat tenggat** dijalankan scheduler asynq di worker tiap hari 08.00 (`APP_TIMEZONE`, default Asia/Jakarta) untuk periode aktif
+  yang `end_date`-nya 3 atau 1 hari lagi: karyawan yang self-assessment belum dikirim, dan manajer yang masih punya anggota belum
+  dinilai. Kunci Redis per periode per hari mencegah kirim ganda. Tenggat = `end_date` periode.
+- Dasbor Karyawan/Manajer/Direktur mengambil saldo & antrean dari `GET /leave/summary` (tidak di-cache 5 menit seperti dasbor KPI).
+- Ponsel: bilah tab bawah (Beranda, KPI/Setuju, Cuti, Kalender, Profil) sesuai M08; sidebar tetap jadi drawer.
+
+**Seeder**: `go run ./cmd/seed` pada database Rilis 1 yang sudah terisi kini hanya menambahkan data izin & cuti (`EnsureLeave`) bila
+belum ada. Contoh pengajuan Rina Wulandari dibuat relatif terhadap hari ini agar angkanya sama dengan mockup (cuti tahunan 2
+terpakai + 2 menunggu, izin 1,5, sakit 2) saat dijalankan sekitar Okt 2026.
+
+## Tambahan (jadwal kerja & izin per jam)
+
+Permintaan: hari kerja bisa termasuk Sabtu dan ada hitungan jam (Sen–Jum 08.00–17.00; Sen–Jum 09.00–17.00 + Sabtu 09.00–15.00),
+diatur per departemen, shift untuk CS menyusul. Jawaban pemilik produk: jadwal **per departemen**; izin sebagian hari = **jam kerja hari itu
+sebagai penyebut** (saldo tetap dalam hari).
+
+- **Tabel `work_schedules` + `work_schedule_days`** (weekday 0 = Minggu … 6 = Sabtu, jam mulai/selesai; hari tanpa baris = libur mingguan) dan
+  `departments.schedule_id` (NULL = jadwal default). Migrasi 000003 langsung mengisi dua jadwal bawaan: **"Jam kantor" (Sen–Jum 08.00–17.00, default)**
+  dan **"Jam kantor + Sabtu" (Sen–Jum 09.00–17.00, Sab 09.00–15.00)**. **Saya tidak menebak departemen mana yang memakai jadwal kedua** — semua departemen
+  tetap di jadwal default sampai HR memasangnya di H-16 → Departemen & jabatan → Jadwal kerja. Tab "Jam kerja" untuk membuat/ubah jadwal; shift CS kelak
+  cukup berupa jadwal baru yang dipasang ke departemen CS.
+- **Hari kerja mengikuti jadwal departemen pengaju** (HR/Direktur tanpa departemen memakai jadwal default). Sabtu terhitung 1 hari kerja hanya bila jadwalnya memuat
+  Sabtu; hari libur nasional/cuti bersama tetap tidak dihitung. Satu titik penentu (`scheduleFor`) sehingga jadwal per karyawan/shift bisa ditambah tanpa mengubah
+  pemanggil. Mengubah jadwal **tidak menghitung ulang** pengajuan yang sudah ada.
+- **Jam istirahat dikurangi** (permintaan pemilik produk: istirahat 12.00–13.00). Istirahat adalah atribut jadwal (`work_schedules.break_start/break_end`,
+  bawaan 12.00–13.00 pada kedua jadwal, bisa diubah HR per jadwal atau dikosongkan). Jam kerja efektif hari itu = selesai − mulai − irisan dengan istirahat
+  (Sen–Jum 08–17 = 8 jam; Sabtu 09–15 = 5 jam).
+- **Izin sebagian hari = jam mulai–selesai** pada satu hari kerja, di dalam jam kerja hari itu: `hari = jam efektif izin ÷ jam efektif hari itu`, dibulatkan
+  2 desimal (08.00–10.00 dari 8 jam = 0,25; Senin 11.00–14.00 = 2 jam efektif karena istirahat terpotong = 0,25; Sabtu 09.00–11.30 dari 5 jam = 0,5).
+  "Paruh pagi/siang" membagi jam **efektif** hari itu sama panjang (jadwal 08–17: pagi 08.00–12.00, siang 13.00–17.00; Sabtu 09–15: pagi 09.00–11.30,
+  siang 11.30–15.00); server yang menghitung batasnya. Minimal 15 menit efektif (rentang yang hanya berisi istirahat ditolak); seluruh jam kerja ditolak
+  (ajukan sebagai satu hari penuh). Hanya jenis dengan "boleh setengah hari" (Izin) yang bisa sebagian hari. Dua izin di tanggal sama boleh bila jamnya
+  tidak beririsan. Tetap satu tahap persetujuan (atasan langsung).
+- Kolom saldo/hari dilebarkan ke `DECIMAL(6,2)` (sebelumnya 1 desimal) agar 0,22 tersimpan; `leave_requests.start_time/end_time` tambahan, `half_session`
+  hanya terisi bila rentang tepat paruh pertama/kedua. Data lama (hanya sesi) tetap terbaca.
+- Konsekuensi: saldo izin bisa berpecahan (mis. 0,22); tampilan memakai koma dan hingga 2 desimal.
+
+## Review & persiapan deploy
+
+- **Sisa saldo akhir tahun**: SPEC menyebut "tidak diakumulasi (default), bisa diubah lewat pengaturan" — sebelumnya belum bisa diubah. Kini saklar
+  `app_settings.leave.carry_over` (H-16 → Jenis cuti; `GET/PUT /leave-policy`, HR). Bila aktif, saldo **yang dibuat setelahnya** untuk tahun baru =
+  kuota jenis cuti + sisa tahun lalu (kuota − terpakai, tidak negatif); hanya jenis yang memotong saldo. Saldo yang sudah ada tidak diubah (tidak ada
+  perhitungan ulang mundur). Tanpa batas maksimum carry-over (asumsi; tambahkan bila perusahaan menetapkan plafon). Bila karyawan tidak punya baris saldo
+  tahun lalu (tidak pernah membuka/memakai), tidak ada sisa yang dibawa.
+- **Batas laju per IP** selain kunci per akun: login 20/menit, lupa password 5/menit, reset 10/menit, refresh 60/menit (Redis, jendela tetap). Angka dipilih
+  longgar agar kantor yang berbagi satu IP (NAT) tidak terganggu. Bila Redis mati, batas per IP dilewati (kunci per akun tetap berlaku di AuthService).
+- **IP klien**: `X-Forwarded-For` hanya dipercaya dari `TRUSTED_PROXIES` (kosong = tidak ada). Compose produksi mempercayai rentang privat karena satu-satunya
+  yang bisa menjangkau container api adalah container web.
+- **SMTP**: dengan akun, TLS wajib di production (STARTTLS; port 465 TLS langsung). Tanpa akun (relay internal / Mailpit) tetap tanpa TLS.
+- **Kolom Penilai** di laporan: nama atasan penilai, hanya terisi setelah penilaian dikirim (sama seperti skor). Tidak masuk PDF (lebar halaman penuh).
+- **Test pada layanan sungguhan**: `TEST_MYSQL_DSN`/`TEST_REDIS_ADDR` menjalankan test pada MySQL (skema dari migrasi asli) dan Redis. Satu database per binary
+  test, semua tabel dikosongkan sebelum tiap test (foreign key tetap ada). Dijalankan CI dengan `-p 1`. Bawaan lokal tetap SQLite + miniredis agar `make test`
+  tidak butuh Docker.
+- **Akun pertama production**: `cmd/seed -bootstrap` (service `bootstrap`) mengisi data master + satu HR; **tanpa** akun/data demo. Password dibaca dari
+  `ADMIN_PASSWORD` (environment, bukan flag) agar tak tercatat di riwayat shell.
+- **Deploy**: migrasi dijalankan eksplisit (`AUTO_MIGRATE=false` di produksi), backup otomatis sebelum tiap deploy (kecuali yang pertama), image diberi tag
+  commit. TLS dihentikan Nginx di host (certbot), container web hanya mendengarkan di 127.0.0.1. Nama image produksi `sikerja-prod-*` agar tidak bertabrakan
+  dengan image dev `sikerja-api`/`sikerja-web`.
+- **Belum diputuskan produk**: batas penilaian atasan per periode, tombol "Kirim pengingat" manual, banyak berkas bukti per realisasi (hanya ada di mockup).
+- **Zona waktu DSN**: kolom `DATE` dibandingkan dengan `time.Time` UTC tengah malam. Dengan `loc=Local` pada host yang zonanya bukan UTC (mis. Windows WIB),
+  driver menggeser parameter sehingga `date = ?` tidak cocok (tanggal libur kembar, bentrok izin tak terdeteksi). Container/server produksi berzona UTC sehingga
+  aman, tetapi DSN test (Makefile, CI, testutil) kini memakai `loc=UTC` agar hasil tidak bergantung zona host. Menjalankan API langsung di host non-UTC:
+  gunakan `loc=UTC` juga.

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,7 +22,31 @@ import (
 	"github.com/retechno/sikerja/backend/internal/storage"
 )
 
+// healthcheck dipakai HEALTHCHECK Docker (image distroless tidak punya curl/wget): `api -healthcheck`.
+func healthcheck() int {
+	addr := os.Getenv("HTTP_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+	c := http.Client{Timeout: 3 * time.Second}
+	resp, err := c.Get("http://" + addr + "/healthz")
+	if err != nil {
+		return 1
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
+}
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "-healthcheck" {
+		os.Exit(healthcheck())
+	}
 	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
 	cfg, err := config.Load()
 	if err != nil {

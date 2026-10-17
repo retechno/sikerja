@@ -169,6 +169,7 @@ async function doExport(format: 'xlsx' | 'pdf') {
                   </button>
                 </th>
                 <th>Predikat</th>
+                <th>Penilai</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -189,6 +190,7 @@ async function doExport(format: 'xlsx' | 'pdf') {
                   <span v-if="r.grade" class="badge" :class="gradeClass(r.grade)">{{ r.grade }}</span
                   ><span v-else class="muted">—</span>
                 </td>
+                <td data-testid="appraiser">{{ r.appraiser || '—' }}</td>
                 <td>
                   <span class="badge b-mute">{{ r.status }}</span>
                 </td>

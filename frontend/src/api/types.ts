@@ -8,6 +8,8 @@ export interface Department {
   name: string
   code: string
   head_id: number | null
+  /** Jadwal kerja departemen; null = jadwal default. */
+  schedule_id?: number | null
 }
 
 export interface Position {
@@ -261,6 +263,8 @@ export interface ReportRow {
   behavior_score: Dec | null
   final_score: Dec | null
   grade: string
+  /** Atasan penilai; kosong sebelum penilaian dikirim. */
+  appraiser: string
   status: string
 }
 
@@ -303,4 +307,200 @@ export interface PeriodProgress {
   manager_done: number
   finalized: number
   avg_final: Dec | null
+}
+
+// ---------- izin & cuti (Rilis 2) ----------
+
+export type LeaveStatus = 'pending_manager' | 'pending_hr' | 'approved' | 'rejected' | 'cancelled'
+
+export interface LeaveType {
+  id: number
+  name: string
+  code: string
+  annual_quota: Dec | null
+  deducts_balance: boolean
+  requires_attachment: boolean
+  attachment_min_days: Dec
+  allow_half_day: boolean
+  min_tenure_months: number
+  max_days_per_request: Dec | null
+  sort: number
+  is_active: boolean
+}
+
+export interface Holiday {
+  id: number
+  date: string
+  name: string
+  type: 'nasional' | 'cuti_bersama'
+}
+
+export interface LeaveBalance {
+  leave_type: LeaveType
+  year: number
+  tracked: boolean
+  quota: Dec | null
+  used: Dec
+  pending: Dec
+  available: Dec | null
+}
+
+export interface DayInfo {
+  date: string
+  weekday: string
+  counted: boolean
+  /** Jam kerja hari itu, mis. "09:00–15:00" (hanya hari kerja). */
+  hours?: string
+  minutes?: number
+  skip?: 'weekend' | 'holiday'
+  holiday?: string
+}
+
+export interface WorkingDays {
+  days: Dec
+  schedule: string
+  /** Izin sebagian hari. */
+  half_day: boolean
+  /** Menit kerja efektif (tanpa istirahat). */
+  partial_minutes?: number
+  day_minutes?: number
+  break?: string
+  morning?: string
+  afternoon?: string
+  calendar_days: number
+  breakdown: DayInfo[]
+  skipped: DayInfo[]
+}
+
+export interface FlowStep {
+  level: number
+  role: string
+  names: string[]
+}
+
+export interface LeaveBalanceInfo {
+  quota: Dec
+  used: Dec
+  pending: Dec
+  available: Dec
+  after: Dec
+}
+
+export interface LeavePreview {
+  working_days: WorkingDays
+  flow: FlowStep[]
+  balance?: LeaveBalanceInfo | null
+  warnings: string[]
+}
+
+export interface TimelineStep {
+  title: string
+  actor: string
+  note?: string
+  at: string | null
+  state: 'done' | 'current' | 'todo' | 'rejected' | 'cancelled'
+}
+
+export interface LeaveConflict {
+  employee_name: string
+  type_name: string
+  range: string
+  status: string
+}
+
+export interface LeaveRequest {
+  id: number
+  number: string | null
+  employee_id: number
+  employee?: Employee
+  leave_type_id: number
+  leave_type?: LeaveType
+  start_date: string
+  end_date: string
+  half_day: boolean
+  half_session: 'pagi' | 'siang' | null
+  /** Izin sebagian hari: jam mulai/selesai "HH:MM". */
+  start_time: string | null
+  end_time: string | null
+  days: Dec
+  reason: string
+  substitute?: Employee | null
+  status: LeaveStatus
+  status_label: string
+  deducted: boolean
+  has_attachment: boolean
+  attachment_name: string
+  can_cancel: boolean
+  cancel_until?: string
+  can_act: boolean
+  is_last_stage: boolean
+  created_at: string
+  timeline?: TimelineStep[]
+  skipped?: DayInfo[]
+  balance?: LeaveBalanceInfo | null
+  conflicts?: LeaveConflict[]
+}
+
+export interface LeaveSummary {
+  year: number
+  balances: LeaveBalance[]
+  recent: LeaveRequest[]
+  pending_count: number
+  queue: LeaveRequest[]
+}
+
+export interface CalendarItem {
+  id: number
+  employee_id: number
+  employee_name: string
+  department_id: number
+  department_name: string
+  type_code: string
+  type_name: string
+  start_date: string
+  end_date: string
+  half_day: boolean
+  half_session?: string
+  start_time?: string
+  end_time?: string
+  status: LeaveStatus
+  days: string
+}
+
+export interface LeaveCalendar {
+  month: string
+  from: string
+  to: string
+  items: CalendarItem[]
+  holidays: Holiday[]
+}
+
+export interface Colleague {
+  id: number
+  name: string
+  position?: string
+}
+
+export interface NotifySetting {
+  key: string
+  label: string
+  hint: string
+  enabled: boolean
+}
+
+export interface WorkScheduleDay {
+  /** 0 = Minggu ... 6 = Sabtu */
+  weekday: number
+  start_time: string
+  end_time: string
+}
+
+export interface WorkSchedule {
+  id: number
+  name: string
+  is_default: boolean
+  /** Jam istirahat "HH:MM"; kosong = tanpa istirahat. */
+  break_start: string
+  break_end: string
+  days: WorkScheduleDay[]
 }

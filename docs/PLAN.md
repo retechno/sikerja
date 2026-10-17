@@ -120,3 +120,52 @@ Bug yang ditemukan dan diperbaiki lewat pengujian itu: upsert nilai atasan menim
 | Karyawan Sales & Marketing | Reza Firmansyah, Nanda Kusuma, Citra Lestari, Ayu Permata, Bagas Saputra | idem |
 | Manajer Developer | Satria Nugraha | satria.nugraha@sikerja.test |
 | Karyawan Developer | Larasati Dewi, Yoga Prasetyo, Andi Kurniawan, Mega Wulan, Tegar Aditya | idem |
+
+
+---
+
+# Rencana Rilis 2 — Izin & cuti, notifikasi
+
+- [x] 1. Migrasi `000002_leave` + model: `leave_types`, `leave_balances`, `leave_requests`, `leave_approvals`, `holidays`, `app_settings`; repository
+- [x] 2. Seeder: 7 jenis cuti, hari libur & cuti bersama 2026 (**dicek ulang HR**), saldo awal semua karyawan, 15 contoh pengajuan
+- [x] 3. `WorkingDayService` (tanpa Sabtu/Minggu/libur; setengah hari = 0,5) + test tabel
+- [x] 4. `LeaveService`: transaksi + row lock, validasi saldo/tumpang tindih/masa kerja/lampiran, alur bertingkat, potong & kembalikan saldo
+- [x] 5. Endpoint + `docs/api.yaml` (disinkronkan otomatis dengan router oleh test)
+- [x] 6. Halaman H-08 (hari kerja live dari API, versi ponsel M08), H-09, H-10, H-11
+- [x] 7. H-16: tab Jenis cuti, Hari libur, Notifikasi; kartu saldo & persetujuan menunggu di dasbor; menu + lencana + tab bawah ponsel
+- [x] 8. Notifikasi: `Notifier`/`Channel`, email via asynq, lonceng dapat dibuka ke tautan, scheduler harian pengingat tenggat
+- [x] 9. Test: hari kerja (akhir pekan/libur), saldo kurang, tumpang tindih, setuju/tolak/batal, pengembalian saldo, persetujuan bersamaan
+- [x] 10. `go test`, golangci-lint, ESLint, Prettier, vue-tsc, Vitest bersih
+
+## Ringkasan akhir Rilis 2
+
+**Hasil verifikasi**
+- Backend `go test ./...` lulus (termasuk 8 goroutine yang menyetujui pengajuan sama → tepat satu berhasil, saldo terpotong sekali),
+  golangci-lint 0 isu. Frontend: Vitest 115 test lulus, ESLint/Prettier/vue-tsc bersih.
+- Diuji terhadap **MySQL 8.4 asli** (bukan hanya SQLite): migrasi 000002, seeder `EnsureLeave` pada database Rilis 1 yang sudah terisi,
+  dan 6 permintaan setuju serentak ke pengajuan yang sama → 1×200, 4×409, saldo terpakai 5 dari 12 (terpotong sekali). Permintaan ke-6
+  tidak sampai ke API (proxy Vite di Docker menjatuhkannya), jadi hanya 5 yang tercatat di log API.
+- **Belum diverifikasi secara visual di browser**: jaringan Docker Desktop ke host macet (port yang dipublikasikan tidak menjawab
+  padahal API sehat di dalam container; memori hampir habis), sehingga halaman H-08–H-11 hanya diuji lewat Vitest, belum
+  dilihat/discreenshot dan **belum diuji di layar 360 px**. Mohon dicoba sekali di mesin Anda (`make dev`, login `rina.wulandari@sikerja.test`).
+- **Email**: pengiriman dan isi email diuji dengan pengirim palsu; belum dicek end-to-end ke Mailpit.
+- **Scheduler 08.00**: logikanya diuji (kunci harian, 3 & 1 hari, tidak mengirim ulang); pemicu cron asynq belum diamati berjalan sungguhan.
+
+**Belum / catatan**
+- Daftar hari libur 2026 harus dicek HR (lihat DECISIONS). Kanal WhatsApp belum ada (hanya antarmuka `Channel`).
+- Penyesuaian saldo per karyawan oleh HR tidak punya antarmuka (kuota per jenis bisa diubah di H-16).
+- CI GitHub Actions, Dockerfile produksi/Nginx, `docs/DEPLOY.md` (Prompt 3) masih belum.
+
+
+---
+
+# Review & persiapan deploy (Prompt 3)
+
+- [x] 1. `docs/REVIEW.md`: status tiap fitur/halaman SPEC + lokasi file
+- [x] 2. Cek keamanan: semua route butuh login (test enumerasi), role/kepemilikan, rate limit (+ per IP), cookie, CORS, lampiran, N+1 (+ antrean cuti), cache 5 menit
+- [x] 3. Perbaikan "sebagian/belum": saklar sisa saldo akhir tahun; kolom Penilai di laporan; IP klien/proxy tepercaya; SMTP TLS wajib
+- [x] 4. GitHub Actions: golangci-lint, `go test` pada MySQL + Redis, `npm ci`, lint, Vitest, build frontend, build image
+- [x] 5. Dockerfile multi-stage api/worker (distroless) + web (Nginx), `docker-compose.prod.yml`, `docs/DEPLOY.md`, `deploy/` (deploy, backup, restore, cron, logrotate)
+- [x] 6. Commit & push (branch `chore/review-deploy`)
+
+Detail temuan, perbaikan, dan yang masih belum ada di [REVIEW.md](REVIEW.md). Workflow Actions belum pernah dijalankan di GitHub.

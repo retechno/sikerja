@@ -3,35 +3,45 @@ import { computed, ref } from 'vue'
 import PageState from '@/components/ui/PageState.vue'
 import Modal from '@/components/ui/Modal.vue'
 import Icon from '@/components/ui/Icon.vue'
-import { ApiError, employees, master, type Department, type Employee, type Position } from '@/api'
+import LeaveTypesTab from './LeaveTypesTab.vue'
+import HolidaysTab from './HolidaysTab.vue'
+import NotificationsTab from './NotificationsTab.vue'
+import WorkSchedulesTab from './WorkSchedulesTab.vue'
+import { ApiError, employees, master, schedules, type Department, type Employee, type Position } from '@/api'
 import { useLoader } from '@/lib/useLoader'
 import { useToastStore } from '@/stores/toast'
 import { useAuthStore } from '@/stores/auth'
 
-// H-16 — Pengaturan (Rilis 1): departemen & jabatan. Jenis cuti, hari libur, dan notifikasi menyusul di Rilis 2.
+// H-16 — Pengaturan: departemen & jabatan, aspek perilaku, jenis cuti, hari libur, dan notifikasi.
 const toast = useToastStore()
 const auth = useAuthStore()
 
-type Tab = 'org' | 'aspects' | 'leave' | 'holidays' | 'notif'
+type Tab = 'org' | 'aspects' | 'hours' | 'leave' | 'holidays' | 'notif'
 const tab = ref<Tab>('org')
-const TABS: { id: Tab; label: string; later?: boolean }[] = [
+const TABS: { id: Tab; label: string }[] = [
   { id: 'org', label: 'Departemen & jabatan' },
   { id: 'aspects', label: 'Aspek perilaku' },
-  { id: 'leave', label: 'Jenis cuti', later: true },
-  { id: 'holidays', label: 'Hari libur', later: true },
-  { id: 'notif', label: 'Notifikasi', later: true },
+  { id: 'hours', label: 'Jam kerja' },
+  { id: 'leave', label: 'Jenis cuti' },
+  { id: 'holidays', label: 'Hari libur' },
+  { id: 'notif', label: 'Notifikasi' },
 ]
 
 const { data, loading, error, reload } = useLoader(async () => {
-  const [departments, positions, people, aspects] = await Promise.all([
+  const [departments, positions, people, aspects, scheds] = await Promise.all([
     master.departments(),
     master.positions(),
     employees.list({ per_page: 200 }),
     master.aspects(),
+    schedules.list(),
   ])
-  return { departments, positions, people: people.data, aspects }
+  return { departments, positions, people: people.data, aspects, scheds }
 })
 
+const scheduleName = (d: Department) =>
+  d.schedule_id
+    ? (data.value?.scheds.find((x) => x.id === d.schedule_id)?.name ?? '—')
+    : `${data.value?.scheds.find((x) => x.is_default)?.name ?? 'Jadwal default'} (default)`
 const headName = (d: Department) => data.value?.people.find((p) => p.id === d.head_id)?.name ?? '—'
 const posCount = (d: Department) => data.value?.positions.filter((p) => p.department_id === d.id).length ?? 0
 const deptName = (id: number | null) =>
@@ -41,7 +51,12 @@ const busy = ref(false)
 // --- departemen ---
 const deptModal = ref(false)
 const deptEdit = ref<Department | null>(null)
-const deptForm = ref({ name: '', code: '', head_id: null as number | null })
+const deptForm = ref({
+  name: '',
+  code: '',
+  head_id: null as number | null,
+  schedule_id: null as number | null,
+})
 const deptErr = ref<Record<string, string>>({})
 const deptMembers = computed<Employee[]>(() =>
   (data.value?.people ?? []).filter((p) => deptEdit.value && p.department_id === deptEdit.value.id),
@@ -49,7 +64,12 @@ const deptMembers = computed<Employee[]>(() =>
 
 function openDept(d: Department | null) {
   deptEdit.value = d
-  deptForm.value = { name: d?.name ?? '', code: d?.code ?? '', head_id: d?.head_id ?? null }
+  deptForm.value = {
+    name: d?.name ?? '',
+    code: d?.code ?? '',
+    head_id: d?.head_id ?? null,
+    schedule_id: d?.schedule_id ?? null,
+  }
   deptErr.value = {}
   deptModal.value = true
 }
@@ -135,20 +155,14 @@ async function confirmRemove() {
       :class="{ pri: tab === t.id }"
       @click="tab = t.id"
     >
-      {{ t.label }}<span v-if="t.later" class="badge b-mute !px-1.5 !py-0 !text-[10px]">Rilis 2</span>
+      {{ t.label }}
     </button>
   </div>
 
-  <div
-    v-if="tab === 'leave' || tab === 'holidays' || tab === 'notif'"
-    class="card text-center"
-    data-testid="later"
-  >
-    <h2>Tersedia di Rilis 2</h2>
-    <p class="muted mb-0">
-      Pengaturan jenis & kuota cuti, hari libur, dan notifikasi dikerjakan bersama modul Izin &amp; Cuti.
-    </p>
-  </div>
+  <WorkSchedulesTab v-if="tab === 'hours'" @changed="reload" />
+  <LeaveTypesTab v-else-if="tab === 'leave'" />
+  <HolidaysTab v-else-if="tab === 'holidays'" />
+  <NotificationsTab v-else-if="tab === 'notif'" />
 
   <PageState v-else :loading="loading && !data" :error="error" @retry="reload">
     <template v-if="data && tab === 'org'">
@@ -169,6 +183,7 @@ async function confirmRemove() {
                 <th>Departemen</th>
                 <th>Kode</th>
                 <th>Kepala</th>
+                <th>Jadwal kerja</th>
                 <th class="num">Jabatan</th>
                 <th><span class="sr-only">Aksi</span></th>
               </tr>
@@ -180,6 +195,7 @@ async function confirmRemove() {
                 </td>
                 <td>{{ d.code }}</td>
                 <td>{{ headName(d) }}</td>
+                <td data-testid="dept-schedule">{{ scheduleName(d) }}</td>
                 <td class="num">{{ posCount(d) }}</td>
                 <td class="whitespace-nowrap text-right">
                   <button
@@ -295,6 +311,14 @@ async function confirmRemove() {
           data-testid="d-code"
         /><span v-if="deptErr.code" class="err">{{ deptErr.code }}</span></label
       >
+      <label class="field"
+        >Jadwal kerja <small>menentukan hari & jam kerja untuk hitungan izin/cuti</small>
+        <select v-model="deptForm.schedule_id" class="input" data-testid="d-schedule">
+          <option :value="null">Jadwal default perusahaan</option>
+          <option v-for="sc in data?.scheds ?? []" :key="sc.id" :value="sc.id">{{ sc.name }}</option>
+        </select>
+        <span v-if="deptErr.schedule_id" class="err">{{ deptErr.schedule_id }}</span>
+      </label>
       <label v-if="deptEdit" class="field"
         >Kepala departemen
         <select v-model="deptForm.head_id" class="input" :class="{ invalid: deptErr.head_id }">

@@ -3,7 +3,7 @@
 Aplikasi internal untuk mengukur kinerja karyawan (KPI & penilaian) serta mengajukan izin dan cuti,
 untuk tim IT Support, Customer Service, Sales & Marketing, dan Developer.
 
-**Status:** Rilis 1 (KPI & penilaian) selesai. Rilis 2 (izin & cuti) dan Rilis 3 belum dikerjakan —
+**Status:** Rilis 1 (KPI & penilaian) dan Rilis 2 (izin & cuti, notifikasi) selesai; Rilis 3 belum dikerjakan —
 lihat [docs/PLAN.md](docs/PLAN.md) untuk rincian yang selesai/belum.
 
 | Dokumen | Isi |
@@ -12,6 +12,8 @@ lihat [docs/PLAN.md](docs/PLAN.md) untuk rincian yang selesai/belum.
 | [docs/api.yaml](docs/api.yaml) | Kontrak API (OpenAPI 3) — dijaga sinkron dengan router lewat test |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Asumsi & keputusan yang tidak tertulis di SPEC |
 | [docs/PLAN.md](docs/PLAN.md) | Checklist Rilis 1 + ringkasan akhir + cara mencoba per role |
+| [docs/REVIEW.md](docs/REVIEW.md) | Review kode terhadap SPEC: status tiap fitur/halaman, pemeriksaan keamanan, yang masih belum |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Deploy ke server Ubuntu: Docker Compose produksi, Nginx + TLS, migrasi, backup harian, rotasi log |
 | [docs/mockup/](docs/mockup/index.html) | Mockup HTML statis (buka `index.html` di browser) |
 | [CLAUDE.md](CLAUDE.md) | Stack dan aturan kode untuk Claude Code |
 
@@ -84,7 +86,11 @@ docker-compose.yml  Makefile  .env.example
 ```bash
 make test        # go test (SQLite in-memory + miniredis, tanpa Docker) + Vitest
 make lint        # gofmt, go vet, golangci-lint + ESLint, Prettier, vue-tsc
+make test-mysql  # go test pada MySQL & Redis sungguhan (seperti CI); butuh `docker compose up -d mysql redis`
 ```
+
+CI (`.github/workflows/ci.yml`): golangci-lint, `go test` pada service MySQL 8.4 + Redis 7, `npm ci`, ESLint, Prettier,
+vue-tsc, Vitest, build frontend, dan build image produksi. Deploy: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Hal yang diuji otomatis: rumus capaian/skor/predikat (termasuk batas 89,99/90 dan realisasi 0),
 contoh H-07 (KPI 95,7 + perilaku 88,0 → 93,4 Istimewa), otorisasi per role dan kepemilikan data
@@ -104,7 +110,7 @@ cd frontend && npm install && VITE_API_PROXY=http://localhost:8080 npm run dev
 ## Keamanan singkat
 
 Password bcrypt · JWT access 15 menit + refresh 7 hari di cookie httpOnly (SameSite=Lax, Secure di production),
-refresh dirotasi dan bisa dicabut · rate limit login 5× gagal → jeda 1 menit (Redis) · proteksi CSRF
+refresh dirotasi dan bisa dicabut · rate limit login 5× gagal → jeda 1 menit per akun + batas per IP (Redis) · proteksi CSRF
 (header `X-Requested-With`) · otorisasi role + cek kepemilikan data di service · lampiran di storage
 privat, jenis berkas dicek dari isinya, diunduh lewat endpoint yang memeriksa hak akses · audit log
 untuk validasi KPI, perubahan nilai, finalisasi, dan buka/tutup periode.

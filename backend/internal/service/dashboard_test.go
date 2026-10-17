@@ -218,7 +218,8 @@ func TestReportAccessAndExports(t *testing.T) {
 	for _, r := range rows[4:] {
 		if len(r) > 2 && r[2] == "Rina Karyawan" {
 			found = true
-			assert.Equal(t, "Final", r[9])
+			assert.Equal(t, w.MgrIT.Name, r[9], "kolom Penilai")
+			assert.Equal(t, "Final", r[10])
 		}
 	}
 	assert.True(t, found)
@@ -262,4 +263,18 @@ func TestPeriodProgress(t *testing.T) {
 	require.NotNil(t, act.AvgFinal)
 	assert.Zero(t, closed.Results)
 	assert.Nil(t, closed.AvgFinal)
+}
+
+func TestReportShowsAppraiserOnlyAfterAppraisalIsSubmitted(t *testing.T) {
+	d := newDash(t)
+	w := d.w
+	d.finalize(t, w.EmpIT1, 4)
+	v, err := d.report.Build(w.Actor(w.HR), w.Active.ID, 0)
+	require.NoError(t, err)
+	by := map[uint64]service.ReportRow{}
+	for _, r := range v.Rows {
+		by[r.EmployeeID] = r
+	}
+	assert.Equal(t, w.MgrIT.Name, by[w.EmpIT1.ID].Appraiser)
+	assert.Empty(t, by[w.EmpIT2.ID].Appraiser, "belum dinilai")
 }

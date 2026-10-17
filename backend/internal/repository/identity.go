@@ -100,6 +100,8 @@ type EmployeeRepo interface {
 	List(f EmployeeFilter) ([]model.Employee, int64, error)
 	ByDepartment(deptID uint64, activeOnly bool) ([]model.Employee, error)
 	AllActive() ([]model.Employee, error)
+	// ByRole: karyawan aktif yang punya role tertentu.
+	ByRole(role string) ([]model.Employee, error)
 	Create(e *model.Employee) error
 	Update(e *model.Employee) error
 	Delete(id uint64) error
@@ -175,6 +177,14 @@ func (r *employeeRepo) ByDepartment(deptID uint64, activeOnly bool) ([]model.Emp
 func (r *employeeRepo) AllActive() ([]model.Employee, error) {
 	var out []model.Employee
 	err := r.base().Where("status = ?", model.StatusActive).Order("name ASC").Find(&out).Error
+	return out, err
+}
+
+func (r *employeeRepo) ByRole(role string) ([]model.Employee, error) {
+	var out []model.Employee
+	sub := r.db.Table("user_roles").Select("user_roles.user_id").
+		Joins("JOIN roles ON roles.id = user_roles.role_id").Where("roles.name = ?", role)
+	err := r.base().Where("status = ? AND user_id IN (?)", model.StatusActive, sub).Order("name ASC").Find(&out).Error
 	return out, err
 }
 

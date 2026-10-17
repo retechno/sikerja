@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -45,13 +47,60 @@ type World struct {
 }
 
 // FakeMailer menampung email reset yang "terkirim".
-type FakeMailer struct{ Sent []Sent }
+type FakeMailer struct {
+	mu      sync.Mutex
+	Sent    []Sent
+	Notices []Notice
+}
 
 type Sent struct{ To, Name, Link string }
 
+// Notice: email notifikasi yang "terkirim" lewat FakeMailer.
+type Notice struct{ To, Name, Subject, Body string }
+
 func (f *FakeMailer) SendPasswordReset(to, name, link string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.Sent = append(f.Sent, Sent{to, name, link})
 	return nil
+}
+
+func (f *FakeMailer) SendNotice(to, name, subject, body string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.Notices = append(f.Notices, Notice{to, name, subject, body})
+	return nil
+}
+
+// NoticesTo mengembalikan email notifikasi untuk alamat tertentu.
+func (f *FakeMailer) NoticesTo(email string) []Notice {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []Notice
+	for _, n := range f.Notices {
+		if n.To == email {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// AdvanceRedis memajukan waktu Redis: miniredis lewat FastForward; Redis sungguhan dengan mengakhiri semua TTL
+// (cukup untuk kunci kedaluwarsa seperti kunci login).
+func (w *World) AdvanceRedis(d time.Duration) {
+	w.T.Helper()
+	if w.MR != nil {
+		w.MR.FastForward(d)
+		return
+	}
+	ctx := context.Background()
+	keys, err := w.Rdb.Keys(ctx, "*").Result()
+	must(w.T, err)
+	for _, k := range keys {
+		if ttl, err := w.Rdb.PTTL(ctx, k).Result(); err == nil && ttl > 0 && ttl <= d {
+			w.Rdb.Del(ctx, k)
+		}
+	}
 }
 
 func NewWorld(t testing.TB) *World {

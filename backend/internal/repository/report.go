@@ -19,6 +19,7 @@ type ScoreRow struct {
 	BehaviorScore  decimal.NullDecimal
 	FinalScore     decimal.NullDecimal
 	Grade          *string
+	AppraiserName  *string // penilai (atasan) pada penilaian ini
 }
 
 // DeptAvgRow = rata-rata skor akhir satu departemen pada satu periode.
@@ -63,10 +64,12 @@ func (r *reportRepo) ScoresForPeriod(periodID, deptID uint64, employeeIDs []uint
 		Select(`e.id AS employee_id, e.nik AS nik, e.name AS employee_name,
 			e.department_id AS department_id, d.name AS department_name, p.name AS position_name,
 			a.id AS appraisal_id, a.status AS status, a.kpi_score AS kpi_score,
-			a.behavior_score AS behavior_score, a.final_score AS final_score, a.grade AS grade`).
+			a.behavior_score AS behavior_score, a.final_score AS final_score, a.grade AS grade,
+			ap.name AS appraiser_name`).
 		Joins("JOIN departments d ON d.id = e.department_id AND d.deleted_at IS NULL").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
 		Joins("LEFT JOIN appraisals a ON a.employee_id = e.id AND a.period_id = ?", periodID).
+		Joins("LEFT JOIN employees ap ON ap.id = a.appraiser_id").
 		Where("e.deleted_at IS NULL AND e.status = ?", "active")
 	if deptID != 0 {
 		q = q.Where("e.department_id = ?", deptID)

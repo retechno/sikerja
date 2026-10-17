@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 
 	"github.com/retechno/sikerja/backend/internal/apperr"
@@ -20,6 +21,7 @@ import (
 type Deps struct {
 	Cfg       config.Config
 	Log       zerolog.Logger
+	Redis     *redis.Client
 	Auth      *service.AuthService
 	Employees *service.EmployeeService
 	Master    *service.MasterService
@@ -31,6 +33,13 @@ type Deps struct {
 	Reports   *service.ReportService
 	Notifs    *service.NotificationService
 	Audit     *service.AuditService
+
+	Leaves      *service.LeaveService
+	LeaveTypes  *service.LeaveTypeService
+	Holidays    *service.HolidayService
+	WorkingDays *service.WorkingDayService
+	NotifyAdmin *service.NotifyService
+	Schedules   *service.ScheduleService
 }
 
 type H struct{ Deps }

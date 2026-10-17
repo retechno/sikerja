@@ -23,6 +23,8 @@ type DepartmentInput struct {
 	Name   string  `json:"name"`
 	Code   string  `json:"code"`
 	HeadID *uint64 `json:"head_id"`
+	// ScheduleID: jadwal kerja departemen; kosong = jadwal default perusahaan.
+	ScheduleID *uint64 `json:"schedule_id"`
 }
 
 type PositionInput struct {
@@ -86,7 +88,12 @@ func (s *MasterService) CreateDepartment(a Actor, in DepartmentInput) (*model.De
 	if len(f) > 0 {
 		return nil, apperr.Validation("Departemen tidak valid", f)
 	}
-	d := &model.Department{Name: in.Name, Code: in.Code}
+	if in.ScheduleID != nil {
+		if _, err := r.Schedules.ByID(*in.ScheduleID); err != nil {
+			return nil, apperr.Validation("Departemen tidak valid", map[string]string{"schedule_id": "Jadwal kerja tidak ditemukan"})
+		}
+	}
+	d := &model.Department{Name: in.Name, Code: in.Code, ScheduleID: in.ScheduleID}
 	if err := r.Departments.Create(d); err != nil {
 		return nil, err
 	}
@@ -111,10 +118,15 @@ func (s *MasterService) UpdateDepartment(a Actor, id uint64, in DepartmentInput)
 		}
 	}
 	s.headCheck(r, id, in.HeadID, f)
+	if in.ScheduleID != nil {
+		if _, err := r.Schedules.ByID(*in.ScheduleID); err != nil {
+			f["schedule_id"] = "Jadwal kerja tidak ditemukan"
+		}
+	}
 	if len(f) > 0 {
 		return nil, apperr.Validation("Departemen tidak valid", f)
 	}
-	d.Name, d.Code, d.HeadID = in.Name, in.Code, in.HeadID
+	d.Name, d.Code, d.HeadID, d.ScheduleID = in.Name, in.Code, in.HeadID, in.ScheduleID
 	return d, r.Departments.Update(d)
 }
 

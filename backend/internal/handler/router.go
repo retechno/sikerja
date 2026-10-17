@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -21,6 +22,8 @@ func NewRouter(d Deps) *gin.Engine {
 	}
 	h := &H{Deps: d}
 	r := gin.New()
+	// IP klien hanya dipercaya dari reverse proxy yang terdaftar (TRUSTED_PROXIES); selain itu pakai alamat koneksi.
+	_ = r.SetTrustedProxies(d.Cfg.TrustedProxies)
 	r.Use(middleware.Recovery(d.Log), middleware.Logger(d.Log), middleware.SecurityHeaders(), middleware.CORS(d.Cfg.CORSOrigins))
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"code": "not_found", "message": "Endpoint tidak ditemukan"}})
@@ -33,11 +36,12 @@ func NewRouter(d Deps) *gin.Engine {
 
 	// ---- publik ----
 	au := api.Group("/auth")
-	au.POST("/login", h.login)
-	au.POST("/refresh", h.refresh)
+	// pembatasan per IP melengkapi kunci per akun di AuthService (mencegah tebak-password lintas akun & banjir email)
+	au.POST("/login", middleware.RateLimit(d.Redis, "login", 20, time.Minute), h.login)
+	au.POST("/refresh", middleware.RateLimit(d.Redis, "refresh", 60, time.Minute), h.refresh)
 	au.POST("/logout", h.logout)
-	au.POST("/forgot-password", h.forgotPassword)
-	au.POST("/reset-password", h.resetPassword)
+	au.POST("/forgot-password", middleware.RateLimit(d.Redis, "forgot", 5, time.Minute), h.forgotPassword)
+	au.POST("/reset-password", middleware.RateLimit(d.Redis, "reset", 10, time.Minute), h.resetPassword)
 
 	// ---- wajib login ----
 	in := api.Group("", middleware.Auth(d.Auth))
@@ -50,6 +54,24 @@ func NewRouter(d Deps) *gin.Engine {
 	in.GET("/notifications", h.listNotifications)
 	in.POST("/notifications/read-all", h.readAllNotifications)
 	in.POST("/notifications/:id/read", h.readNotification)
+
+	// izin & cuti: hak akses diperiksa di service (pemilik, atasan, HR, Direktur)
+	in.GET("/leave-types", h.listLeaveTypes)
+	in.GET("/holidays", h.listHolidays)
+	in.GET("/leave/balances", h.leaveBalances)
+	in.GET("/leave/preview", h.leavePreview)
+	in.GET("/leave/summary", h.leaveSummary)
+	in.GET("/leave/substitutes", h.leaveSubstitutes)
+	in.GET("/leave/calendar", h.leaveCalendar)
+	in.GET("/leave/requests", h.listLeaves)
+	in.POST("/leave/requests", upload, h.submitLeave)
+	in.GET("/leave/requests/:id", h.getLeave)
+	in.POST("/leave/requests/:id/cancel", h.cancelLeave)
+	in.GET("/leave/requests/:id/attachment", h.leaveAttachment)
+	in.GET("/leave/approvals", h.leaveApprovals)
+	in.GET("/leave/approvals/count", h.leaveApprovalCount)
+	in.POST("/leave/requests/:id/approve", h.leaveDecision(true))
+	in.POST("/leave/requests/:id/reject", h.leaveDecision(false))
 
 	in.GET("/departments", h.listDepartments)
 	in.GET("/positions", h.listPositions)
@@ -78,6 +100,7 @@ func NewRouter(d Deps) *gin.Engine {
 	fin := in.Group("", middleware.RequireRoles(model.RoleHR, model.RoleDirector))
 	fin.POST("/periods/:id/appraisals/:employee_id/finalize", h.finalize)
 	fin.GET("/dashboard/director", h.dashDirector)
+	fin.GET("/work-schedules", h.listSchedules)
 	fin.GET("/reports/scores", h.reportScores)
 	fin.GET("/reports/scores/export", h.reportExport)
 	fin.GET("/kpi-templates", h.listTemplates)
@@ -98,6 +121,21 @@ func NewRouter(d Deps) *gin.Engine {
 	hr.GET("/employees-import-template", h.importTemplate)
 	hr.PUT("/employees/:id", h.updateEmployee)
 	hr.DELETE("/employees/:id", h.deleteEmployee)
+
+	hr.POST("/leave-types", h.createLeaveType)
+	hr.PUT("/leave-types/:id", h.updateLeaveType)
+	hr.DELETE("/leave-types/:id", h.deleteLeaveType)
+	hr.GET("/leave-policy", h.leavePolicy)
+	hr.PUT("/leave-policy", h.setLeavePolicy)
+	hr.POST("/holidays", h.createHoliday)
+	hr.POST("/holidays/import", h.importHolidays)
+	hr.PUT("/holidays/:id", h.updateHoliday)
+	hr.DELETE("/holidays/:id", h.deleteHoliday)
+	hr.POST("/work-schedules", h.createSchedule)
+	hr.PUT("/work-schedules/:id", h.updateSchedule)
+	hr.DELETE("/work-schedules/:id", h.deleteSchedule)
+	hr.GET("/notification-settings", h.notificationSettings)
+	hr.PUT("/notification-settings", h.setNotificationSetting)
 
 	hr.GET("/periods/progress", h.periodProgress)
 	hr.POST("/periods", h.createPeriod)

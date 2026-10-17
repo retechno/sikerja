@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"io/fs"
 	"regexp"
 	"sort"
 	"strings"
@@ -15,12 +16,23 @@ import (
 	"github.com/retechno/sikerja/backend/migrations"
 )
 
+var (
+	alterTable = regexp.MustCompile(`(?s)ALTER TABLE (\w+)(.*?);`)
+	addColumn  = regexp.MustCompile(`ADD COLUMN (\w+)`)
+)
+
 var createTable = regexp.MustCompile(`(?s)CREATE TABLE (\w+) \((.*?)\n\) ENGINE`)
 
 func migrationColumns(t *testing.T) map[string][]string {
 	t.Helper()
-	raw, err := migrations.FS.ReadFile("000001_init.up.sql")
+	files, err := fs.Glob(migrations.FS, "*.up.sql")
 	require.NoError(t, err)
+	var raw []byte
+	for _, f := range files {
+		b, err := migrations.FS.ReadFile(f)
+		require.NoError(t, err)
+		raw = append(raw, b...)
+	}
 	out := map[string][]string{}
 	for _, m := range createTable.FindAllStringSubmatch(string(raw), -1) {
 		var cols []string
@@ -38,6 +50,13 @@ func migrationColumns(t *testing.T) map[string][]string {
 		}
 		sort.Strings(cols)
 		out[m[1]] = cols
+	}
+	// kolom yang ditambahkan lewat ALTER TABLE ... ADD COLUMN
+	for _, m := range alterTable.FindAllStringSubmatch(string(raw), -1) {
+		for _, c := range addColumn.FindAllStringSubmatch(m[2], -1) {
+			out[m[1]] = append(out[m[1]], c[1])
+		}
+		sort.Strings(out[m[1]])
 	}
 	return out
 }
@@ -59,11 +78,5 @@ func TestModelsMatchMigration(t *testing.T) {
 		if assert.True(t, ok, "tabel %s tidak ada di migrasi", s.Table) {
 			assert.Equal(t, want, cols, "kolom tabel %s", s.Table)
 		}
-	}
-}
-
-func TestNoLeaveOrHolidayTablesInRelease1(t *testing.T) {
-	for name := range migrationColumns(t) {
-		assert.False(t, strings.HasPrefix(name, "leave_") || name == "holidays", name)
 	}
 }

@@ -28,6 +28,13 @@ type Repos struct {
 	Notifications NotificationRepo
 	Resets        ResetRepo
 	Reports       ReportRepo
+	LeaveTypes    LeaveTypeRepo
+	Balances      BalanceRepo
+	Leaves        LeaveRequestRepo
+	Approvals     ApprovalRepo
+	Holidays      HolidayRepo
+	Settings      SettingRepo
+	Schedules     ScheduleRepo
 }
 
 // Store membuat Repos dan menjalankan fungsi dalam transaksi.
@@ -61,6 +68,13 @@ func build(db *gorm.DB) Repos {
 		Notifications: &notificationRepo{db},
 		Resets:        &resetRepo{db},
 		Reports:       &reportRepo{db},
+		LeaveTypes:    &leaveTypeRepo{db},
+		Balances:      &balanceRepo{db},
+		Leaves:        &leaveRequestRepo{db},
+		Approvals:     &approvalRepo{db},
+		Holidays:      &holidayRepo{db},
+		Settings:      &settingRepo{db},
+		Schedules:     &scheduleRepo{db},
 	}
 }
 
