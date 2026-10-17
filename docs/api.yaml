@@ -520,6 +520,26 @@ paths:
       summary: Impor daftar libur resmi bawaan untuk satu tahun (HR). Tanggal yang sudah ada dilewati; 404 bila tahun belum tersedia.
       requestBody: { required: true, content: { application/json: { schema: { type: object, required: [year], properties: { year: { type: integer, example: 2026 } } } } } }
       responses: { "200": { description: "OK; data = {added}" }, "403": { $ref: "#/components/responses/Error" }, "404": { $ref: "#/components/responses/Error" } }
+  /holidays/import/preview:
+    post:
+      tags: [Izin & Cuti]
+      summary: Pratinjau impor hari libur setahun dari sumber eksternal (kalender iCal, HOLIDAY_ICS_URL). Tidak menyimpan apa pun (HR).
+      description: Hanya libur nasional dan cuti bersama; entri "Perayaan" dibuang. `exists` menandai tanggal yang sudah ada, `tentative` tanggal yang masih bisa berubah menurut sumber. 404 bila impor eksternal dimatikan, 502 bila sumber tidak terjangkau.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [year], properties: { year: { type: integer, example: 2027 } } } } } }
+      responses:
+        "200":
+          description: Daftar kandidat
+          content: { application/json: { schema: { type: object, properties: { data: { type: array, items: { $ref: "#/components/schemas/HolidayCandidate" } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+        "502": { $ref: "#/components/responses/Error" }
+  /holidays/import/confirm:
+    post:
+      tags: [Izin & Cuti]
+      summary: Simpan baris pratinjau yang dipilih HR. Tanggal yang sudah ada dilewati (tidak ditimpa); dicatat di activity_log.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/HolidayInput" } } } } } } }
+      responses: { "200": { description: "OK; data = {added, skipped}" }, "403": { $ref: "#/components/responses/Error" }, "422": { $ref: "#/components/responses/Error" } }
   /holidays/{id}:
     put:
       tags: [Izin & Cuti]
@@ -940,6 +960,15 @@ components:
       type: object
       required: [date, name]
       properties: { date: { type: string, format: date }, name: { type: string }, type: { type: string, enum: [nasional, cuti_bersama], default: nasional } }
+    HolidayCandidate:
+      type: object
+      properties:
+        date: { type: string, format: date }
+        name: { type: string }
+        type: { type: string, enum: [nasional, cuti_bersama] }
+        tentative: { type: boolean, description: Sumber menandai tanggal ini belum pasti }
+        exists: { type: boolean, description: Tanggal ini sudah terdaftar }
+        existing_name: { type: string, description: Nama yang sudah terdaftar (bila exists) }
     LeaveBalance:
       type: object
       properties:

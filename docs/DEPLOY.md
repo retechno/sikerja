@@ -97,8 +97,11 @@ curl -fsS https://DOMAIN-ANDA/healthz                        # {"status":"ok"}
 Lalu di aplikasi (sebagai HR): tambah karyawan / **Import Excel**, atur atasan & role, cek **Hari libur** dan **Jam kerja**
 di Pengaturan, buat periode penilaian pertama.
 
-> **Hari libur harus diperbarui HR tiap tahun** (Pengaturan → Hari libur → impor/tambah). Daftar bawaan hanya mencakup
-> tahun yang ada di kode, dan tanggal cuti bersama ditetapkan pemerintah — periksa ulang dengan SKB resmi.
+> **Hari libur harus diperbarui HR tiap tahun**: Pengaturan → Hari libur → **Impor hari libur** → pilih tahun → periksa pratinjau
+> terhadap SKB Tiga Menteri → simpan. Pratinjau diambil server dari kalender publik (`HOLIDAY_ICS_URL`, bawaan kalender hari libur
+> Indonesia milik Google), jadi container `api` perlu akses keluar HTTPS; `HOLIDAY_ICS_URL=off` mematikan fitur ini. Bila sumber tidak
+> terjangkau, tambahkan manual atau pakai "daftar bawaan" (hanya 2026). Tanggal cuti bersama ditetapkan pemerintah dan sumber bisa
+> terlambat atau keliru — selalu cocokkan dengan SKB.
 
 ## 5. Update / rilis baru
 

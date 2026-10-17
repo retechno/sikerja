@@ -26,6 +26,10 @@ func NewDeps(cfg config.Config, log zerolog.Logger, db *gorm.DB, rdb *redis.Clie
 	periods := service.NewPeriodService(store, cache)
 	periods.SetNotifier(notifier)
 	workingDays := service.NewWorkingDayService(store)
+	holidays := service.NewHolidayService(store)
+	if cfg.HolidayICSURL != "" {
+		holidays.SetSource(service.NewICSHolidaySource(cfg.HolidayICSURL))
+	}
 	return handler.Deps{
 		Cfg:         cfg,
 		Log:         log,
@@ -43,7 +47,7 @@ func NewDeps(cfg config.Config, log zerolog.Logger, db *gorm.DB, rdb *redis.Clie
 		Audit:       service.NewAuditService(store),
 		Leaves:      service.NewLeaveService(store, files, workingDays, notifier),
 		LeaveTypes:  service.NewLeaveTypeService(store),
-		Holidays:    service.NewHolidayService(store),
+		Holidays:    holidays,
 		WorkingDays: workingDays,
 		NotifyAdmin: notifier,
 		Schedules:   service.NewScheduleService(store),

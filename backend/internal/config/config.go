@@ -22,6 +22,8 @@ type Config struct {
 	CORSOrigins  []string
 	// TrustedProxies: alamat/CIDR reverse proxy yang boleh menentukan IP klien lewat X-Forwarded-For (kosong = tidak ada).
 	TrustedProxies []string
+	// HolidayICSURL: sumber impor hari libur (iCalendar). Kosong lewat HOLIDAY_ICS_URL=off = impor eksternal dimatikan.
+	HolidayICSURL string
 
 	AccessTTL  time.Duration
 	RefreshTTL time.Duration
@@ -35,6 +37,10 @@ type Config struct {
 	SMTPUser string
 	SMTPPass string
 }
+
+// DefaultHolidayICS: kalender publik "Hari libur di Indonesia" milik Google (tanpa API key).
+// Memuat libur nasional dan cuti bersama; entri "Perayaan" (Paskah, 1 Ramadan, dst.) dibuang oleh parser.
+const DefaultHolidayICS = "https://calendar.google.com/calendar/ical/id.indonesian%23holiday%40group.v.calendar.google.com/public/basic.ics"
 
 func (c Config) IsProd() bool { return c.Env == "production" }
 
@@ -72,6 +78,10 @@ func Load() (Config, error) {
 		if p = strings.TrimSpace(p); p != "" {
 			c.TrustedProxies = append(c.TrustedProxies, p)
 		}
+	}
+	c.HolidayICSURL = get("HOLIDAY_ICS_URL", DefaultHolidayICS)
+	if c.HolidayICSURL == "off" {
+		c.HolidayICSURL = ""
 	}
 	if c.IsProd() && len(c.JWTSecret) < 32 {
 		return c, fmt.Errorf("JWT_SECRET wajib diisi (min. 32 karakter) di production")

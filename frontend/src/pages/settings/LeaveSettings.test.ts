@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   saveHoliday: vi.fn(),
   deleteHoliday: vi.fn(),
   importHolidays: vi.fn(),
+  previewHolidayImport: vi.fn(),
+  confirmHolidayImport: vi.fn(),
   notifySettings: vi.fn(),
   setNotifySetting: vi.fn(),
   policy: vi.fn(),
@@ -52,6 +54,19 @@ beforeEach(() => {
   ])
   api.saveHoliday.mockResolvedValue({})
   api.importHolidays.mockResolvedValue({ added: 25 })
+  api.previewHolidayImport.mockResolvedValue([
+    {
+      date: '2027-01-01',
+      name: 'Hari Tahun Baru',
+      type: 'nasional',
+      tentative: false,
+      exists: true,
+      existing_name: 'Tahun Baru',
+    },
+    { date: '2027-02-08', name: 'Cuti Bersama Imlek', type: 'cuti_bersama', tentative: false, exists: false },
+    { date: '2027-02-09', name: 'Tahun Baru Imlek', type: 'nasional', tentative: true, exists: false },
+  ])
+  api.confirmHolidayImport.mockResolvedValue({ added: 1, skipped: 0 })
   api.notifySettings.mockResolvedValue([
     {
       key: 'notify.leave_submitted',
@@ -206,9 +221,53 @@ describe('Pengaturan → Hari libur (H-16)', () => {
     document.body.querySelector<HTMLElement>('button[aria-label="Tutup"]')!.click()
     await flushPromises()
 
+    // tombol impor membuka pratinjau; daftar bawaan hanya cadangan di dalamnya
     await w.get('[data-testid="import"]').trigger('click')
     await flushPromises()
+    expect(api.previewHolidayImport).toHaveBeenCalledWith(new Date().getFullYear())
+    expect(api.importHolidays).not.toHaveBeenCalled()
+    await click('[data-testid="import-builtin"]')
     expect(api.importHolidays).toHaveBeenCalledWith(new Date().getFullYear())
+    w.unmount()
+  })
+
+  it('impor lewat pratinjau: yang sudah ada terkunci, tentatif ditandai, hanya yang dipilih disimpan', async () => {
+    const w = await mountTab()
+    await w.get('[data-testid="import"]').trigger('click')
+    await flushPromises()
+
+    const exists = body().querySelector<HTMLInputElement>('[data-testid="cand-2027-01-01"] input')!
+    expect(exists.disabled).toBe(true)
+    expect(exists.checked).toBe(false)
+    expect(body().textContent).toContain('Sudah ada')
+    expect(body().textContent).toContain('Tentatif')
+    expect(body().textContent).toContain('Cocokkan dengan SKB')
+    expect(body().textContent).toContain('Simpan 1 terpilih') // tentatif tidak dicentang otomatis
+
+    // HR sengaja memilih yang tentatif juga → keduanya dikirim, yang sudah ada tidak
+    body().querySelector<HTMLInputElement>('[data-testid="cand-2027-02-09"] input')!.click()
+    await flushPromises()
+    expect(body().textContent).toContain('Simpan 2 terpilih')
+    expect(body().querySelector('[data-testid="tentative-note"]')).not.toBeNull()
+    await click('[data-testid="import-confirm"]')
+    expect(api.confirmHolidayImport).toHaveBeenCalledWith([
+      { date: '2027-02-08', name: 'Cuti Bersama Imlek', type: 'cuti_bersama' },
+      { date: '2027-02-09', name: 'Tahun Baru Imlek', type: 'nasional' },
+    ])
+    expect(api.holidays).toHaveBeenCalledTimes(2) // daftar dimuat ulang setelah simpan
+    w.unmount()
+  })
+
+  it('sumber tidak terjangkau: pesan tampil, tidak ada yang tersimpan, daftar bawaan tetap bisa dipakai', async () => {
+    api.previewHolidayImport.mockRejectedValue(
+      new ApiError(502, 'holiday_source_unavailable', 'Sumber hari libur sedang tidak bisa dihubungi.', {}),
+    )
+    const w = await mountTab()
+    await w.get('[data-testid="import"]').trigger('click')
+    await flushPromises()
+    expect(body().textContent).toContain('Sumber hari libur sedang tidak bisa dihubungi')
+    expect(api.confirmHolidayImport).not.toHaveBeenCalled()
+    expect(body().querySelector('[data-testid="import-builtin"]')).not.toBeNull()
     w.unmount()
   })
 })
