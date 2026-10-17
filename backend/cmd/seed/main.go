@@ -39,6 +39,15 @@ func main() {
 	}
 	res, err := seed.Run(db, seed.Options{Fresh: *fresh})
 	if errors.Is(err, seed.ErrAlreadySeeded) {
+		// database Rilis 1 yang sudah terisi: lengkapi hanya data izin & cuti bila belum ada
+		added, lerr := seed.EnsureLeave(db, time.Now())
+		if lerr != nil {
+			log.Fatal().Err(lerr).Msg("seed izin & cuti")
+		}
+		if added {
+			fmt.Println("Data izin & cuti (jenis, hari libur, saldo, contoh pengajuan) ditambahkan; data lain tidak diubah.")
+			return
+		}
 		fmt.Println("Data sudah ada — tidak ada yang diubah. Gunakan `go run ./cmd/seed -fresh` untuk mengisi ulang dari nol.")
 		return
 	}

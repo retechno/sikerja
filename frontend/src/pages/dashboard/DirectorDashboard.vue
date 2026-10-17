@@ -4,7 +4,8 @@ import { RouterLink } from 'vue-router'
 import PageState from '@/components/ui/PageState.vue'
 import BarChart from '@/components/charts/BarChart.vue'
 import LineChart from '@/components/charts/LineChart.vue'
-import { dashboard } from '@/api'
+import PendingApprovals from '@/components/leave/PendingApprovals.vue'
+import { dashboard, leave } from '@/api'
 import { useLoader } from '@/lib/useLoader'
 import { fmtScore, gradeClass } from '@/lib/format'
 import { usePeriodStore } from '@/stores/period'
@@ -15,6 +16,9 @@ const { data, loading, error, reload } = useLoader(async () => {
   await period.load()
   return dashboard.director(period.selectedId ?? undefined)
 }, [() => period.selectedId])
+
+// pengajuan izin/cuti yang menunggu keputusan Direktur/HR
+const leaveSummary = useLoader(() => leave.summary())
 
 const GRADE_COLORS: Record<string, string> = {
   Istimewa: '#0E5A52',
@@ -78,6 +82,12 @@ const pct = computed(() =>
           <div class="d"><RouterLink to="/laporan">Lihat laporan →</RouterLink></div>
         </div>
       </div>
+
+      <PendingApprovals
+        v-if="leaveSummary.data.value && leaveSummary.data.value.pending_count > 0"
+        :items="leaveSummary.data.value.queue"
+        :total="leaveSummary.data.value.pending_count"
+      />
 
       <div class="flex flex-wrap items-start gap-6">
         <section class="card min-w-0 flex-[1_1_420px]">

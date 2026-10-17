@@ -1,6 +1,15 @@
 import { download, get, getWithMeta, http, send } from './client'
 import type {
   AppraisalView,
+  Colleague,
+  Holiday,
+  LeaveBalance,
+  LeaveCalendar,
+  LeavePreview,
+  LeaveRequest,
+  LeaveSummary,
+  LeaveType,
+  NotifySetting,
   Department,
   DirectorDash,
   Employee,
@@ -190,4 +199,82 @@ export const notifications = {
   list: () => get<{ items: NotificationItem[]; unread: number }>('/notifications'),
   readAll: () => send<void>('post', '/notifications/read-all'),
   read: (id: number) => send<void>('post', `/notifications/${id}/read`),
+}
+
+// ---------- izin & cuti ----------
+export interface LeaveTypeBody {
+  name: string
+  code: string
+  annual_quota: number | null
+  deducts_balance: boolean
+  requires_attachment: boolean
+  attachment_min_days: number
+  allow_half_day: boolean
+  min_tenure_months: number
+  max_days_per_request: number | null
+  sort: number
+  is_active: boolean
+}
+
+export interface HolidayBody {
+  date: string
+  name: string
+  type: 'nasional' | 'cuti_bersama'
+}
+
+export interface LeaveSubmit {
+  leave_type_id: number
+  start_date: string
+  end_date: string
+  half_day: boolean
+  half_session: 'pagi' | 'siang'
+  reason: string
+  substitute_id: number | null
+  attachment: File | null
+}
+
+export const leave = {
+  types: () => get<LeaveType[]>('/leave-types'),
+  saveType: (id: number | null, b: LeaveTypeBody) =>
+    id ? send<LeaveType>('put', `/leave-types/${id}`, b) : send<LeaveType>('post', '/leave-types', b),
+  deleteType: (id: number) => send<void>('delete', `/leave-types/${id}`),
+  holidays: (year?: number) => get<Holiday[]>('/holidays', year ? { year } : undefined),
+  saveHoliday: (id: number | null, b: HolidayBody) =>
+    id ? send<Holiday>('put', `/holidays/${id}`, b) : send<Holiday>('post', '/holidays', b),
+  deleteHoliday: (id: number) => send<void>('delete', `/holidays/${id}`),
+  importHolidays: (year: number) => send<{ added: number }>('post', '/holidays/import', { year }),
+  balances: (params: { employee_id?: number; year?: number } = {}) =>
+    get<LeaveBalance[]>('/leave/balances', params),
+  /** Hitung hari kerja live (tanpa menyimpan). */
+  preview: (p: { type_id?: number; start_date: string; end_date: string; half_day: boolean }) =>
+    get<LeavePreview>('/leave/preview', p),
+  summary: () => get<LeaveSummary>('/leave/summary'),
+  substitutes: () => get<Colleague[]>('/leave/substitutes'),
+  calendar: (p: { month: string; department_id?: number; include_pending: boolean }) =>
+    get<LeaveCalendar>('/leave/calendar', p),
+  submit: async (b: LeaveSubmit) => {
+    const fd = new FormData()
+    fd.append('leave_type_id', String(b.leave_type_id))
+    fd.append('start_date', b.start_date)
+    fd.append('end_date', b.end_date)
+    fd.append('half_day', String(b.half_day))
+    if (b.half_day) fd.append('half_session', b.half_session)
+    fd.append('reason', b.reason)
+    if (b.substitute_id) fd.append('substitute_id', String(b.substitute_id))
+    if (b.attachment) fd.append('attachment', b.attachment)
+    return (await http.post('/leave/requests', fd)).data.data as LeaveRequest
+  },
+  list: (p: { status?: string; year?: number; page?: number; per_page?: number }) =>
+    getWithMeta<LeaveRequest[], PageMeta>('/leave/requests', p),
+  get: (id: number) => get<LeaveRequest>(`/leave/requests/${id}`),
+  cancel: (id: number) => send<LeaveRequest>('post', `/leave/requests/${id}/cancel`),
+  approve: (id: number, note = '') => send<LeaveRequest>('post', `/leave/requests/${id}/approve`, { note }),
+  reject: (id: number, note: string) => send<LeaveRequest>('post', `/leave/requests/${id}/reject`, { note }),
+  approvals: (tab: 'pending' | 'history') => get<LeaveRequest[]>('/leave/approvals', { tab }),
+  approvalCount: () => get<{ pending: number }>('/leave/approvals/count'),
+  attachmentUrl: (id: number, dl = false) =>
+    `/api/v1/leave/requests/${id}/attachment${dl ? '?download=1' : ''}`,
+  notifySettings: () => get<NotifySetting[]>('/notification-settings'),
+  setNotifySetting: (key: string, enabled: boolean) =>
+    send<NotifySetting[]>('put', '/notification-settings', { key, enabled }),
 }

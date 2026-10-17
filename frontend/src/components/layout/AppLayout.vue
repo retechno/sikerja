@@ -6,12 +6,15 @@ import Avatar from '@/components/ui/Avatar.vue'
 import NotificationBell from '@/components/layout/NotificationBell.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePeriodStore } from '@/stores/period'
+import { useLeaveStore } from '@/stores/leave'
 import { ROLE_LABEL } from '@/lib/format'
 
 interface NavItem {
   to: string
   label: string
   icon: string
+  /** tampilkan lencana jumlah persetujuan menunggu */
+  badge?: boolean
 }
 interface NavGroup {
   label: string
@@ -20,12 +23,19 @@ interface NavGroup {
 
 const auth = useAuthStore()
 const periods = usePeriodStore()
+const leaveStore = useLeaveStore()
 const route = useRoute()
 const router = useRouter()
 const drawer = ref(false)
 const menu = ref(false)
 
-// Menu sesuai role (Rilis 1; menu izin & cuti ditambahkan di Rilis 2).
+// Menu sesuai role. Izin & cuti tersedia untuk semua; Persetujuan untuk manajer, HR, dan Direktur.
+const leaveItems: NavItem[] = [
+  { to: '/izin-cuti/ajukan', label: 'Ajukan Izin/Cuti', icon: 'send' },
+  { to: '/izin-cuti/riwayat', label: 'Riwayat Pengajuan', icon: 'clock' },
+  { to: '/kalender', label: 'Kalender Tim', icon: 'calendar' },
+]
+const approvalItem: NavItem = { to: '/persetujuan', label: 'Persetujuan', icon: 'inbox', badge: true }
 const groups = computed<NavGroup[]>(() => {
   const g: NavGroup[] = []
   if (auth.isEmployee) {
@@ -35,8 +45,11 @@ const groups = computed<NavGroup[]>(() => {
         { to: '/dashboard', label: 'Dashboard', icon: 'home' },
         { to: '/kpi', label: 'KPI Saya', icon: 'target' },
         { to: '/penilaian/saya', label: 'Penilaian Saya', icon: 'clipboard' },
+        ...leaveItems,
       ],
     })
+  } else {
+    g.push({ label: 'Izin & Cuti', items: leaveItems })
   }
   if (auth.isManager || (auth.isDirector && !auth.isManager)) {
     g.push({
@@ -48,6 +61,7 @@ const groups = computed<NavGroup[]>(() => {
           label: auth.isManager ? 'Penilaian Tim' : 'Penilaian Manajer',
           icon: 'clipboard',
         },
+        approvalItem,
       ],
     })
   }
@@ -65,6 +79,7 @@ const groups = computed<NavGroup[]>(() => {
     g.push({
       label: 'Administrasi',
       items: [
+        approvalItem,
         { to: '/master/karyawan', label: 'Karyawan', icon: 'users' },
         { to: '/master/template-kpi', label: 'Template KPI', icon: 'list' },
         { to: '/master/periode', label: 'Periode Penilaian', icon: 'clock' },
@@ -90,20 +105,36 @@ const roleLine = computed(() => {
 
 const showPeriod = computed(() => route.meta.period && periods.list.length > 0)
 
+const approver = computed(() => auth.isManager || auth.isHR || auth.isDirector)
+
+// tab bawah di ponsel (M08): jalan pintas ke fitur yang paling sering dipakai
+const tabs = computed<NavItem[]>(() => [
+  { to: auth.home, label: 'Beranda', icon: 'home' },
+  auth.isEmployee
+    ? { to: '/kpi', label: 'KPI', icon: 'target' }
+    : { to: '/persetujuan', label: 'Setuju', icon: 'inbox', badge: true },
+  { to: '/izin-cuti/ajukan', label: 'Cuti', icon: 'send' },
+  { to: '/kalender', label: 'Kalender', icon: 'calendar' },
+  { to: '/profil', label: 'Profil', icon: 'user' },
+])
+
 onMounted(() => {
   void periods.load()
+  if (approver.value) void leaveStore.refresh()
 })
 watch(
   () => route.fullPath,
   () => {
     drawer.value = false
     menu.value = false
+    if (approver.value) void leaveStore.refresh()
   },
 )
 
 async function logout() {
   await auth.logout()
   periods.reset()
+  leaveStore.reset()
   await router.replace({ name: 'login' })
 }
 
@@ -161,6 +192,13 @@ const periodLabel = (p: { name: string; status: string }) =>
             active-class="!bg-primary-soft !font-bold !text-side"
           >
             <Icon :name="it.icon" />{{ it.label }}
+            <span
+              v-if="it.badge && leaveStore.pending > 0"
+              class="ml-auto rounded-full bg-accent px-2 py-px text-[11px] font-bold text-side"
+              :aria-label="`${leaveStore.pending} menunggu`"
+              data-testid="nav-badge"
+              >{{ leaveStore.pending }}</span
+            >
           </RouterLink>
         </div>
       </nav>
@@ -241,9 +279,30 @@ const periodLabel = (p: { name: string; status: string }) =>
         </div>
       </header>
 
-      <div class="mx-auto flex w-full max-w-[1240px] flex-col gap-6 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
+      <div class="mx-auto flex w-full max-w-[1240px] flex-col gap-6 px-4 pb-28 pt-6 sm:px-8 sm:pt-7 lg:pb-10">
         <RouterView />
       </div>
+
+      <nav
+        class="fixed inset-x-0 bottom-0 z-20 flex border-t border-line bg-white px-1 pb-3 pt-1 lg:hidden"
+        aria-label="Navigasi cepat"
+        data-testid="tabbar"
+      >
+        <RouterLink
+          v-for="t in tabs"
+          :key="t.to + t.label"
+          :to="t.to"
+          class="relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[11px] text-ink-soft no-underline hover:text-ink-soft"
+          active-class="!font-bold !text-primary"
+        >
+          <Icon :name="t.icon" :size="22" />{{ t.label }}
+          <span
+            v-if="t.badge && leaveStore.pending > 0"
+            class="absolute right-[calc(50%-18px)] top-1 rounded-full bg-accent px-1.5 text-[10px] font-bold text-side"
+            >{{ leaveStore.pending }}</span
+          >
+        </RouterLink>
+      </nav>
     </main>
   </div>
 </template>

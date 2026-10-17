@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Icon from '@/components/ui/Icon.vue'
 import { notifications, type NotificationItem } from '@/api'
+import { fmtDate } from '@/lib/format'
 
+const router = useRouter()
 const open = ref(false)
 const items = ref<NotificationItem[]>([])
 const unread = ref(0)
@@ -22,16 +25,42 @@ async function readAll() {
   await load()
 }
 
-function label(n: NotificationItem): string {
-  try {
-    const d = JSON.parse(n.data) as { message?: string }
-    return d.message ?? n.type
-  } catch {
-    return n.type
-  }
+interface Parsed {
+  title?: string
+  message?: string
+  link?: string
 }
 
-onMounted(load)
+function parse(n: NotificationItem): Parsed {
+  try {
+    return JSON.parse(n.data) as Parsed
+  } catch {
+    return {}
+  }
+}
+const label = (n: NotificationItem) => parse(n).message ?? n.type
+
+/** Buka tautan notifikasi dan tandai terbaca. */
+async function openItem(n: NotificationItem) {
+  const link = parse(n).link
+  open.value = false
+  if (!n.read_at) {
+    try {
+      await notifications.read(n.id)
+    } catch {
+      /* abaikan */
+    }
+    void load()
+  }
+  if (link) await router.push(link)
+}
+
+let timer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  void load()
+  timer = setInterval(load, 60_000) // lonceng menyegarkan diri tiap menit
+})
+onBeforeUnmount(() => clearInterval(timer))
 </script>
 
 <template>
@@ -51,7 +80,7 @@ onMounted(load)
     </button>
     <div
       v-if="open"
-      class="absolute right-0 top-[52px] z-20 w-72 rounded-xl border border-line bg-white shadow-lg"
+      class="absolute right-0 top-[52px] z-30 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line bg-white shadow-lg"
     >
       <div class="flex items-center justify-between border-b border-line px-4 py-3">
         <b>Notifikasi</b>
@@ -61,13 +90,18 @@ onMounted(load)
       </div>
       <p v-if="!items.length" class="m-0 px-4 py-6 text-center text-ink-soft">Belum ada notifikasi.</p>
       <ul v-else class="m-0 max-h-72 list-none overflow-y-auto p-0">
-        <li
-          v-for="n in items"
-          :key="n.id"
-          class="border-b border-line-soft px-4 py-3 last:border-0"
-          :class="{ 'bg-primary-tint': !n.read_at }"
-        >
-          {{ label(n) }}
+        <li v-for="n in items" :key="n.id" class="border-b border-line-soft last:border-0">
+          <button
+            type="button"
+            class="block w-full px-4 py-3 text-left hover:bg-canvas"
+            :class="{ 'bg-primary-tint': !n.read_at }"
+            :data-testid="`notif-${n.id}`"
+            @click="openItem(n)"
+          >
+            <b v-if="parse(n).title" class="block text-[13px]">{{ parse(n).title }}</b>
+            <span class="text-[13px]">{{ label(n) }}</span>
+            <span class="muted mt-0.5 block text-[11.5px]">{{ fmtDate(n.created_at) }}</span>
+          </button>
         </li>
       </ul>
     </div>

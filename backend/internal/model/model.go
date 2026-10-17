@@ -215,6 +215,7 @@ func All() []any {
 		&KpiTemplate{}, &KpiIndicator{}, &AppraisalPeriod{}, &KpiResult{},
 		&BehaviorAspect{}, &Appraisal{}, &AppraisalScore{},
 		&Notification{}, &ActivityLog{}, &PasswordReset{},
+		&LeaveType{}, &LeaveBalance{}, &LeaveRequest{}, &LeaveApproval{}, &Holiday{}, &Setting{},
 	}
 }
 
