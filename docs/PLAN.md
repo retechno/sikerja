@@ -155,3 +155,17 @@ Bug yang ditemukan dan diperbaiki lewat pengujian itu: upsert nilai atasan menim
 - Daftar hari libur 2026 harus dicek HR (lihat DECISIONS). Kanal WhatsApp belum ada (hanya antarmuka `Channel`).
 - Penyesuaian saldo per karyawan oleh HR tidak punya antarmuka (kuota per jenis bisa diubah di H-16).
 - CI GitHub Actions, Dockerfile produksi/Nginx, `docs/DEPLOY.md` (Prompt 3) masih belum.
+
+
+---
+
+# Review & persiapan deploy (Prompt 3)
+
+- [x] 1. `docs/REVIEW.md`: status tiap fitur/halaman SPEC + lokasi file
+- [x] 2. Cek keamanan: semua route butuh login (test enumerasi), role/kepemilikan, rate limit (+ per IP), cookie, CORS, lampiran, N+1 (+ antrean cuti), cache 5 menit
+- [x] 3. Perbaikan "sebagian/belum": saklar sisa saldo akhir tahun; kolom Penilai di laporan; IP klien/proxy tepercaya; SMTP TLS wajib
+- [x] 4. GitHub Actions: golangci-lint, `go test` pada MySQL + Redis, `npm ci`, lint, Vitest, build frontend, build image
+- [x] 5. Dockerfile multi-stage api/worker (distroless) + web (Nginx), `docker-compose.prod.yml`, `docs/DEPLOY.md`, `deploy/` (deploy, backup, restore, cron, logrotate)
+- [x] 6. Commit & push (branch `chore/review-deploy`)
+
+Detail temuan, perbaikan, dan yang masih belum ada di [REVIEW.md](REVIEW.md). Workflow Actions belum pernah dijalankan di GitHub.

@@ -195,3 +195,26 @@ sebagai penyebut** (saldo tetap dalam hari).
 - Kolom saldo/hari dilebarkan ke `DECIMAL(6,2)` (sebelumnya 1 desimal) agar 0,22 tersimpan; `leave_requests.start_time/end_time` tambahan, `half_session`
   hanya terisi bila rentang tepat paruh pertama/kedua. Data lama (hanya sesi) tetap terbaca.
 - Konsekuensi: saldo izin bisa berpecahan (mis. 0,22); tampilan memakai koma dan hingga 2 desimal.
+
+## Review & persiapan deploy
+
+- **Sisa saldo akhir tahun**: SPEC menyebut "tidak diakumulasi (default), bisa diubah lewat pengaturan" — sebelumnya belum bisa diubah. Kini saklar
+  `app_settings.leave.carry_over` (H-16 → Jenis cuti; `GET/PUT /leave-policy`, HR). Bila aktif, saldo **yang dibuat setelahnya** untuk tahun baru =
+  kuota jenis cuti + sisa tahun lalu (kuota − terpakai, tidak negatif); hanya jenis yang memotong saldo. Saldo yang sudah ada tidak diubah (tidak ada
+  perhitungan ulang mundur). Tanpa batas maksimum carry-over (asumsi; tambahkan bila perusahaan menetapkan plafon). Bila karyawan tidak punya baris saldo
+  tahun lalu (tidak pernah membuka/memakai), tidak ada sisa yang dibawa.
+- **Batas laju per IP** selain kunci per akun: login 20/menit, lupa password 5/menit, reset 10/menit, refresh 60/menit (Redis, jendela tetap). Angka dipilih
+  longgar agar kantor yang berbagi satu IP (NAT) tidak terganggu. Bila Redis mati, batas per IP dilewati (kunci per akun tetap berlaku di AuthService).
+- **IP klien**: `X-Forwarded-For` hanya dipercaya dari `TRUSTED_PROXIES` (kosong = tidak ada). Compose produksi mempercayai rentang privat karena satu-satunya
+  yang bisa menjangkau container api adalah container web.
+- **SMTP**: dengan akun, TLS wajib di production (STARTTLS; port 465 TLS langsung). Tanpa akun (relay internal / Mailpit) tetap tanpa TLS.
+- **Kolom Penilai** di laporan: nama atasan penilai, hanya terisi setelah penilaian dikirim (sama seperti skor). Tidak masuk PDF (lebar halaman penuh).
+- **Test pada layanan sungguhan**: `TEST_MYSQL_DSN`/`TEST_REDIS_ADDR` menjalankan test pada MySQL (skema dari migrasi asli) dan Redis. Satu database per binary
+  test, semua tabel dikosongkan sebelum tiap test (foreign key tetap ada). Dijalankan CI dengan `-p 1`. Bawaan lokal tetap SQLite + miniredis agar `make test`
+  tidak butuh Docker.
+- **Akun pertama production**: `cmd/seed -bootstrap` (service `bootstrap`) mengisi data master + satu HR; **tanpa** akun/data demo. Password dibaca dari
+  `ADMIN_PASSWORD` (environment, bukan flag) agar tak tercatat di riwayat shell.
+- **Deploy**: migrasi dijalankan eksplisit (`AUTO_MIGRATE=false` di produksi), backup otomatis sebelum tiap deploy (kecuali yang pertama), image diberi tag
+  commit. TLS dihentikan Nginx di host (certbot), container web hanya mendengarkan di 127.0.0.1. Nama image produksi `sikerja-prod-*` agar tidak bertabrakan
+  dengan image dev `sikerja-api`/`sikerja-web`.
+- **Belum diputuskan produk**: batas penilaian atasan per periode, tombol "Kirim pengingat" manual, banyak berkas bukti per realisasi (hanya ada di mockup).
