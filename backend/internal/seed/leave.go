@@ -110,33 +110,44 @@ func EnsureLeave(db *gorm.DB, now time.Time) (bool, error) {
 	return err == nil, err
 }
 
-func seedLeave(r repository.Repos, now time.Time) error {
-	today := service.DateOnly(now)
-	year := today.Year()
+// seedLeaveMaster mengisi data master izin & cuti (hari libur, jadwal kerja, jenis cuti) tanpa data karyawan.
+func seedLeaveMaster(r repository.Repos, now time.Time) (types map[string]*model.LeaveType, hmap map[string]string, err error) {
+	year := service.DateOnly(now).Year()
 
 	// hari libur tahun berjalan (dan tahun lain bila ada daftar bawaan)
-	hmap := map[string]string{}
+	hmap = map[string]string{}
 	for y := year - 1; y <= year+1; y++ {
 		for _, h := range service.OfficialHolidays[y] {
 			row := h
 			if err := r.Holidays.Create(&row); err != nil {
-				return err
+				return nil, nil, err
 			}
 			hmap[row.Date.Format("2006-01-02")] = row.Name
 		}
 	}
 
 	if err := ensureSchedules(r); err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	types := map[string]*model.LeaveType{}
+	types = map[string]*model.LeaveType{}
 	for i := range leaveTypes {
 		t := leaveTypes[i]
 		if err := r.LeaveTypes.Create(&t); err != nil {
-			return err
+			return nil, nil, err
 		}
 		types[t.Code] = &t
+	}
+
+	return types, hmap, nil
+}
+
+func seedLeave(r repository.Repos, now time.Time) error {
+	today := service.DateOnly(now)
+	year := today.Year()
+	types, hmap, err := seedLeaveMaster(r, now)
+	if err != nil {
+		return err
 	}
 
 	emps, err := r.Employees.AllActive()

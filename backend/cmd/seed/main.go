@@ -20,6 +20,9 @@ import (
 
 func main() {
 	fresh := flag.Bool("fresh", false, "kosongkan semua data lebih dulu")
+	bootstrap := flag.Bool("bootstrap", false, "instalasi production: data master + satu akun HR, tanpa data demo")
+	adminEmail := flag.String("admin-email", os.Getenv("ADMIN_EMAIL"), "email HR pertama (untuk -bootstrap)")
+	adminName := flag.String("admin-name", os.Getenv("ADMIN_NAME"), "nama HR pertama (untuk -bootstrap)")
 	flag.Parse()
 
 	log := zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
@@ -27,7 +30,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("konfigurasi")
 	}
-	if cfg.IsProd() && !*fresh {
+	if cfg.IsProd() && !*fresh && !*bootstrap {
 		log.Warn().Msg("seed dijalankan di production; pastikan ini disengaja")
 	}
 	if err := database.Migrate(cfg.DBDSN); err != nil {
@@ -36,6 +39,19 @@ func main() {
 	db, err := database.Open(cfg.DBDSN, log)
 	if err != nil {
 		log.Fatal().Err(err).Msg("database")
+	}
+	if *bootstrap {
+		// password dibaca dari environment (bukan flag) agar tidak tercatat di riwayat shell / daftar proses
+		err := seed.Bootstrap(db, seed.BootstrapOptions{Email: *adminEmail, Name: *adminName, Password: os.Getenv("ADMIN_PASSWORD")})
+		if errors.Is(err, seed.ErrAlreadySeeded) {
+			fmt.Println("Database sudah berisi akun — bootstrap dilewati.")
+			return
+		}
+		if err != nil {
+			log.Fatal().Err(err).Msg("bootstrap")
+		}
+		fmt.Printf("Bootstrap selesai. Masuk sebagai %s lalu ganti password lewat menu profil.\n", *adminEmail)
+		return
 	}
 	res, err := seed.Run(db, seed.Options{Fresh: *fresh})
 	if errors.Is(err, seed.ErrAlreadySeeded) {

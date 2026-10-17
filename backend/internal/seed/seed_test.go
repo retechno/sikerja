@@ -8,6 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/retechno/sikerja/backend/internal/model"
 	"github.com/retechno/sikerja/backend/internal/repository"
@@ -270,4 +271,36 @@ func TestSeedIsDeterministicAndRefusesToOverwrite(t *testing.T) {
 	_, err := seed.Run(w1.DB, seed.Options{Now: now})
 	assert.ErrorIs(t, err, seed.ErrAlreadySeeded)
 	_ = repository.ErrNotFound
+}
+
+func TestBootstrapCreatesMasterDataAndOneHRAccountOnly(t *testing.T) {
+	db := testutil.NewDB(t)
+	require.Error(t, seed.Bootstrap(db, seed.BootstrapOptions{Email: "hr@perusahaan.id", Name: "HR", Password: "pendek"}))
+	require.Error(t, seed.Bootstrap(db, seed.BootstrapOptions{Email: "bukan-email", Name: "HR", Password: "password-panjang"}))
+
+	require.NoError(t, seed.Bootstrap(db, seed.BootstrapOptions{Email: " HR@Perusahaan.id ", Name: "Admin HR", Password: "password-panjang"}))
+
+	count := func(m any) int64 {
+		var n int64
+		require.NoError(t, db.Model(m).Count(&n).Error)
+		return n
+	}
+	assert.EqualValues(t, 1, count(&model.User{}), "hanya satu akun, tanpa akun demo")
+	assert.EqualValues(t, 1, count(&model.Employee{}))
+	assert.EqualValues(t, 4, count(&model.Department{}))
+	assert.EqualValues(t, 4, count(&model.KpiTemplate{}))
+	assert.EqualValues(t, 5, count(&model.BehaviorAspect{}))
+	assert.Positive(t, count(&model.LeaveType{}))
+	assert.Positive(t, count(&model.Holiday{}))
+	assert.Zero(t, count(&model.AppraisalPeriod{}), "tanpa periode demo")
+	assert.Zero(t, count(&model.LeaveRequest{}), "tanpa contoh pengajuan")
+
+	u, err := repository.NewStore(db).R().Users.ByEmail("hr@perusahaan.id")
+	require.NoError(t, err)
+	require.Len(t, u.Roles, 1)
+	assert.Equal(t, model.RoleHR, u.Roles[0].Name)
+	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(u.Password), []byte("password-panjang")))
+
+	// kedua kali: tidak menimpa apa pun
+	assert.ErrorIs(t, seed.Bootstrap(db, seed.BootstrapOptions{Email: "lain@x.id", Name: "X", Password: "password-panjang"}), seed.ErrAlreadySeeded)
 }
