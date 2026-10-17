@@ -160,6 +160,45 @@ func (h *H) importHolidays(c *gin.Context) {
 	ok(c, gin.H{"added": n})
 }
 
+func (h *H) previewHolidayImport(c *gin.Context) {
+	var b struct {
+		Year int `json:"year"`
+	}
+	if !h.bind(c, &b) {
+		return
+	}
+	v, err := h.Holidays.PreviewImport(c.Request.Context(), actor(c), b.Year)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	ok(c, v)
+}
+
+func (h *H) confirmHolidayImport(c *gin.Context) {
+	var b struct {
+		Items []holidayBody `json:"items"`
+	}
+	if !h.bind(c, &b) {
+		return
+	}
+	items := make([]service.HolidayInput, 0, len(b.Items))
+	for _, it := range b.Items {
+		in, err := it.input()
+		if err != nil {
+			h.fail(c, err)
+			return
+		}
+		items = append(items, in)
+	}
+	added, skipped, err := h.Holidays.ImportSelected(actor(c), items)
+	if err != nil {
+		h.fail(c, err)
+		return
+	}
+	ok(c, gin.H{"added": added, "skipped": skipped})
+}
+
 // ---------- notifikasi: pengaturan ----------
 
 func (h *H) notificationSettings(c *gin.Context) {

@@ -129,6 +129,8 @@ func NewRouter(d Deps) *gin.Engine {
 	hr.PUT("/leave-policy", h.setLeavePolicy)
 	hr.POST("/holidays", h.createHoliday)
 	hr.POST("/holidays/import", h.importHolidays)
+	hr.POST("/holidays/import/preview", h.previewHolidayImport)
+	hr.POST("/holidays/import/confirm", h.confirmHolidayImport)
 	hr.PUT("/holidays/:id", h.updateHoliday)
 	hr.DELETE("/holidays/:id", h.deleteHoliday)
 	hr.POST("/work-schedules", h.createSchedule)

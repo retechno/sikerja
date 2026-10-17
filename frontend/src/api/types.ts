@@ -335,6 +335,15 @@ export interface Holiday {
   type: 'nasional' | 'cuti_bersama'
 }
 
+export interface HolidayCandidate {
+  date: string
+  name: string
+  type: 'nasional' | 'cuti_bersama'
+  tentative: boolean
+  exists: boolean
+  existing_name?: string
+}
+
 export interface LeaveBalance {
   leave_type: LeaveType
   year: number

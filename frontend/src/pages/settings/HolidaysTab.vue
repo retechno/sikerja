@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import Modal from '@/components/ui/Modal.vue'
 import PageState from '@/components/ui/PageState.vue'
 import Icon from '@/components/ui/Icon.vue'
+import HolidayImportModal from './HolidayImportModal.vue'
 import { ApiError, leave, type Holiday } from '@/api'
 import { useLoader } from '@/lib/useLoader'
 import { useToastStore } from '@/stores/toast'
@@ -27,6 +28,7 @@ const form = ref({ date: '', name: '', type: 'nasional' as Holiday['type'] })
 const errors = ref<Record<string, string>>({})
 const busy = ref(false)
 const removing = ref<Holiday | null>(null)
+const importing = ref(false)
 
 function openForm(h: Holiday | null) {
   editing.value = h
@@ -76,6 +78,7 @@ async function confirmRemove() {
 }
 
 async function importOfficial() {
+  importing.value = false
   busy.value = true
   try {
     const r = await leave.importHolidays(year.value)
@@ -111,8 +114,8 @@ async function importOfficial() {
           <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
         </select>
       </label>
-      <button type="button" class="btn sm" :disabled="busy" data-testid="import" @click="importOfficial">
-        Impor dari daftar resmi
+      <button type="button" class="btn sm" :disabled="busy" data-testid="import" @click="importing = true">
+        Impor hari libur
       </button>
       <button type="button" class="btn sm pri" data-testid="add-holiday" @click="openForm(null)">
         <Icon name="plus" :size="15" />Tambah
@@ -150,9 +153,17 @@ async function importOfficial() {
       </div>
     </PageState>
     <p class="hint mb-0 mt-3">
-      Daftar bawaan disusun dari SKB Tiga Menteri dan bisa berubah; HR wajib mengecek ulang sebelum dipakai.
+      Daftar hasil impor bisa berubah mengikuti SKB Tiga Menteri; HR wajib mengecek ulang sebelum dipakai.
     </p>
   </section>
+
+  <HolidayImportModal
+    :open="importing"
+    :year="year"
+    @close="importing = false"
+    @done="((importing = false), reload())"
+    @builtin="importOfficial"
+  />
 
   <Modal :open="open" :title="editing ? 'Ubah hari libur' : 'Tambah hari libur'" @close="open = false">
     <form class="flex flex-col gap-4" novalidate @submit.prevent="save">
