@@ -20,6 +20,8 @@ type Config struct {
 	StorageDir   string
 	FrontendURL  string
 	CORSOrigins  []string
+	// TrustedProxies: alamat/CIDR reverse proxy yang boleh menentukan IP klien lewat X-Forwarded-For (kosong = tidak ada).
+	TrustedProxies []string
 
 	AccessTTL  time.Duration
 	RefreshTTL time.Duration
@@ -64,6 +66,11 @@ func Load() (Config, error) {
 	for _, o := range strings.Split(get("CORS_ORIGINS", c.FrontendURL), ",") {
 		if o = strings.TrimSpace(o); o != "" {
 			c.CORSOrigins = append(c.CORSOrigins, o)
+		}
+	}
+	for _, p := range strings.Split(get("TRUSTED_PROXIES", ""), ",") {
+		if p = strings.TrimSpace(p); p != "" {
+			c.TrustedProxies = append(c.TrustedProxies, p)
 		}
 	}
 	if c.IsProd() && len(c.JWTSecret) < 32 {

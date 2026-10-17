@@ -58,8 +58,16 @@ func (m *SMTPMailer) send(to, subject, body string) error {
 
 	opts := []gomail.Option{gomail.WithPort(m.cfg.SMTPPort), gomail.WithTLSPolicy(gomail.NoTLS)}
 	if m.cfg.SMTPUser != "" {
+		// kredensial tidak boleh lewat koneksi polos: di production TLS wajib (STARTTLS di 587, TLS langsung di 465)
+		policy := gomail.TLSOpportunistic
+		if m.cfg.IsProd() {
+			policy = gomail.TLSMandatory
+		}
+		opts = append(opts, gomail.WithTLSPolicy(policy))
+		if m.cfg.SMTPPort == 465 {
+			opts = append(opts, gomail.WithSSL())
+		}
 		opts = append(opts,
-			gomail.WithTLSPolicy(gomail.TLSOpportunistic),
 			gomail.WithSMTPAuth(gomail.SMTPAuthAutoDiscover),
 			gomail.WithUsername(m.cfg.SMTPUser), gomail.WithPassword(m.cfg.SMTPPass))
 	}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 
 	"github.com/retechno/sikerja/backend/internal/apperr"
@@ -101,6 +102,36 @@ func CORS(origins []string) gin.HandlerFunc {
 		}
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	}
+}
+
+// RateLimit membatasi jumlah request per IP klien pada satu kelompok route (jendela tetap, counter di Redis).
+// Bila Redis tidak terjangkau request tetap dilayani (pembatasan per akun di service tetap berlaku).
+func RateLimit(rdb *redis.Client, bucket string, max int, window time.Duration) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if rdb == nil {
+			c.Next()
+			return
+		}
+		key := "rl:" + bucket + ":" + c.ClientIP()
+		ctx := c.Request.Context()
+		n, err := rdb.Incr(ctx, key).Result()
+		if err != nil {
+			c.Next()
+			return
+		}
+		if n == 1 {
+			rdb.Expire(ctx, key, window)
+		}
+		if int(n) > max {
+			secs := int(window.Seconds())
+			if ttl, err := rdb.TTL(ctx, key).Result(); err == nil && ttl > 0 {
+				secs = int((ttl + time.Second - 1) / time.Second)
+			}
+			WriteError(c, apperr.TooMany("Terlalu banyak permintaan. Coba lagi sebentar lagi", secs))
 			return
 		}
 		c.Next()

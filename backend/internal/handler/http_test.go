@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -534,4 +535,75 @@ func TestPeriodLifecycleOverHTTP(t *testing.T) {
 	var logs []model.ActivityLog
 	e.w.DB.Where("action = ?", "period.open").Find(&logs)
 	assert.Len(t, logs, 1)
+}
+
+func TestAuthEndpointsAreRateLimitedPerIP(t *testing.T) {
+	e := newEnv(t)
+	c := e.anon()
+	// email berbeda-beda: kunci per akun tidak terpicu, tetapi batas per IP tetap menahan
+	for i := 0; i < 20; i++ {
+		res, _ := c.do("POST", "/api/v1/auth/login", obj{"email": fmt.Sprintf("tidak.ada%d@test.id", i), "password": "x"})
+		require.Equal(t, 401, res.StatusCode, "percobaan %d", i)
+	}
+	res, body := c.do("POST", "/api/v1/auth/login", obj{"email": "lagi@test.id", "password": "x"})
+	assert.Equal(t, http.StatusTooManyRequests, res.StatusCode)
+	assert.NotEmpty(t, res.Header.Get("Retry-After"))
+	assert.Equal(t, "too_many_requests", errCode(body))
+
+	// lupa password: 5 per menit per IP (mencegah banjir email)
+	for i := 0; i < 5; i++ {
+		res, _ := c.do("POST", "/api/v1/auth/forgot-password", obj{"email": "rina@test.id"})
+		require.Equal(t, 200, res.StatusCode)
+	}
+	res, _ = c.do("POST", "/api/v1/auth/forgot-password", obj{"email": "rina@test.id"})
+	assert.Equal(t, http.StatusTooManyRequests, res.StatusCode)
+}
+
+func TestForwardedForIgnoredFromUntrustedClient(t *testing.T) {
+	e := newEnv(t)
+	c := e.anon()
+	// tanpa TRUSTED_PROXIES, X-Forwarded-For tidak boleh dipakai untuk menghindari batas per IP
+	for i := 0; i < 20; i++ {
+		res := c.raw("POST", "/api/v1/auth/login", strings.NewReader(`{"email":"a@test.id","password":"x"}`), "application/json",
+			map[string]string{"X-Forwarded-For": fmt.Sprintf("10.9.9.%d", i)})
+		_ = res.Body.Close()
+	}
+	res, _ := c.do("POST", "/api/v1/auth/login", obj{"email": "b@test.id", "password": "x"})
+	assert.Equal(t, http.StatusTooManyRequests, res.StatusCode)
+}
+
+// Setiap route yang terdaftar, kecuali daftar publik di bawah, wajib menolak request tanpa login (401).
+// Route baru yang lupa dipasangi middleware Auth akan membuat test ini gagal.
+func TestEveryRouteExceptPublicRequiresLogin(t *testing.T) {
+	w := testutil.NewWorld(t)
+	files, err := storage.NewLocal(w.Cfg.StorageDir)
+	require.NoError(t, err)
+	router := handler.NewRouter(app.NewDeps(w.Cfg, zerolog.Nop(), w.DB, w.Rdb, w.Mailer, files))
+	public := map[string]bool{
+		"GET /healthz":                      true,
+		"POST /api/v1/auth/login":           true,
+		"POST /api/v1/auth/refresh":         true, // memeriksa cookie refresh sendiri
+		"POST /api/v1/auth/logout":          true,
+		"POST /api/v1/auth/forgot-password": true,
+		"POST /api/v1/auth/reset-password":  true,
+	}
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+	n := 0
+	for _, rt := range router.Routes() {
+		if public[rt.Method+" "+rt.Path] {
+			continue
+		}
+		n++
+		path := regexp.MustCompile(`:[a-z_]+`).ReplaceAllString(rt.Path, "1")
+		req, err := http.NewRequest(rt.Method, srv.URL+path, strings.NewReader("{}"))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Requested-With", "XMLHttpRequest")
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		_ = res.Body.Close()
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "%s %s harus butuh login", rt.Method, rt.Path)
+	}
+	assert.Greater(t, n, 80, "jumlah route yang diperiksa terlalu sedikit — enumerasi route rusak?")
 }
